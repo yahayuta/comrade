@@ -270,16 +270,19 @@ public class ComradeFX extends Application {
     private void drawMap(GraphicsContext gc) {
         int mapRows = MapData.getMapLength();
         int mapCols = 24; // MapData is always 24 columns wide
-        double tileWidth = (double) GAME_WIDTH / mapCols;
-        double tileHeight = (double) GAME_HEIGHT / mapRows;
-        int rowsOnScreen = mapRows;
-        int colsOnScreen = mapCols;
-        int yOffset = mapScrollY % (int)tileHeight;
-        int mapRowOffset = (int)(mapScrollY / tileHeight) % mapRows;
-        for (int row = 0; row < rowsOnScreen; row++) {
-            int mapRow = (mapRowOffset + row) % mapRows;
-            for (int col = 0; col < colsOnScreen; col++) {
-                int tile = MapData.MapDataReturn(mapRow, col);
+        int tilesX = (int) Math.ceil((double) GAME_WIDTH / TILE_SIZE);
+        int tilesY = (int) Math.ceil((double) GAME_HEIGHT / TILE_SIZE) + 1; // +1 for partial tile at bottom
+        int mapPixelHeight = mapRows * TILE_SIZE;
+
+        // Calculate which row of the map is at the top of the screen
+        int scrollOffset = mapScrollY % mapPixelHeight;
+        int firstRow = scrollOffset / TILE_SIZE;
+        int yOffset = -(scrollOffset % TILE_SIZE);
+
+        for (int row = 0; row < tilesY; row++) {
+            int mapRow = (firstRow + row) % mapRows;
+            for (int col = 0; col < tilesX; col++) {
+                int tile = MapData.MapDataReturn(mapRow, col % mapCols);
                 Image tileImg = null;
                 switch (tile) {
                     case 0: tileImg = sea; break;
@@ -288,7 +291,7 @@ public class ComradeFX extends Application {
                     case 3: tileImg = wd; break;
                 }
                 if (tileImg != null) {
-                    gc.drawImage(tileImg, col * tileWidth, row * tileHeight - yOffset, tileWidth, tileHeight);
+                    gc.drawImage(tileImg, col * TILE_SIZE, yOffset + row * TILE_SIZE, TILE_SIZE, TILE_SIZE);
                 }
             }
         }
