@@ -35,6 +35,8 @@ public class ComradeFX extends Application {
     private int[] myexX = new int[1], myexY = new int[1], myexTimer = new int[1];
     private boolean myexCond = false;
     private Image explosionImg;
+    // Score variable
+    private int score = 0;
 
     // Game display size
     private static final int GAME_WIDTH = 360;
@@ -191,6 +193,7 @@ public class ComradeFX extends Application {
                             enexCond[j] = true;
                             enemCond[j] = false;
                             ammoCond[i] = false;
+                            score += 100; // Add score for defeating enemy
                         }
                     }
                 }
@@ -303,6 +306,9 @@ public class ComradeFX extends Application {
         gc.fillRect(0, 0, GAME_WIDTH, GAME_HEIGHT);
         // Draw the scrolling map background
         drawMap(gc);
+        // Draw score
+        gc.setFill(javafx.scene.paint.Color.WHITE);
+        gc.fillText("Score: " + score, 10, 20);
         // Draw player
         if (!myexCond) {
             gc.drawImage(me, myX, myY);
