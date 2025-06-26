@@ -268,15 +268,16 @@ public class ComradeFX extends Application {
     }
 
     private void drawMap(GraphicsContext gc) {
-        // Calculate how many rows and columns fit on the screen
-        int rowsOnScreen = (GAME_HEIGHT / TILE_SIZE) + 2;
-        int colsOnScreen = (GAME_WIDTH / TILE_SIZE) + 2;
         int mapRows = MapData.getMapLength();
-        int yOffset = mapScrollY % TILE_SIZE;
-        int mapRowOffset = mapScrollY / TILE_SIZE;
+        int mapCols = 24; // MapData is always 24 columns wide
+        double tileWidth = (double) GAME_WIDTH / mapCols;
+        double tileHeight = (double) GAME_HEIGHT / mapRows;
+        int rowsOnScreen = mapRows;
+        int colsOnScreen = mapCols;
+        int yOffset = mapScrollY % (int)tileHeight;
+        int mapRowOffset = (int)(mapScrollY / tileHeight) % mapRows;
         for (int row = 0; row < rowsOnScreen; row++) {
-            int mapRow = mapRowOffset + row;
-            if (mapRow >= mapRows) continue;
+            int mapRow = (mapRowOffset + row) % mapRows;
             for (int col = 0; col < colsOnScreen; col++) {
                 int tile = MapData.MapDataReturn(mapRow, col);
                 Image tileImg = null;
@@ -287,7 +288,7 @@ public class ComradeFX extends Application {
                     case 3: tileImg = wd; break;
                 }
                 if (tileImg != null) {
-                    gc.drawImage(tileImg, col * TILE_SIZE, row * TILE_SIZE - yOffset);
+                    gc.drawImage(tileImg, col * tileWidth, row * tileHeight - yOffset, tileWidth, tileHeight);
                 }
             }
         }
@@ -296,8 +297,9 @@ public class ComradeFX extends Application {
     private void updateMapScroll() {
         // Scroll the map by MAP_SCROLL_SPEED pixels per frame
         mapScrollY -= MAP_SCROLL_SPEED;
+        int mapPixelHeight = MapData.getMapLength() * TILE_SIZE;
         if (mapScrollY < 0) {
-            mapScrollY = 0;
+            mapScrollY += mapPixelHeight;
         }
     }
 
