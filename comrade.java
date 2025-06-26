@@ -5,27 +5,27 @@ import java.awt.*;
 
 public class comrade extends Applet implements KeyListener, Runnable
 {
-	private int myX, myY;//自機座標
-	private int enemX[], enemY[];//敵座標
-	private int ammoX1[], ammoY1[], ammoX2[], ammoY2[];//自機弾座標
-	private int enamX[], enamY[];//敵弾座標
-	private int enamXmov[], enamYmov[];//敵弾移動率
-	private int bosX, bosY;//ボス座標
-	private int bosexYsm=0, bosexYend=0;//ボス爆発用座標
-	private int enmovX[], enmovY[];//敵移動率
-	private int enexX[], enexY[], enexYsm[], enexYend[];//敵爆発座標
-	private int meexX, meexY, meexYend, meexYsm;//自機爆発座標
-	private int hitenem=0, hitme=0, hitboss=0, nextboss=50, bosscnt=0, hitleft=100;//ヒットカウント数
-	private int enemovtype[], enemtype, bosstype;//敵タイプ判定用
-	private int bosdir=0;//ボス方向
-	private int score=0, subscore=100, bosscore=2000, hitrate=0, ammofired=0;//スコア用
-	private int mapX=0, mapY=0, mvmp=0, wtmpmv=0;//マップ用
+	private int myX, myY;//player coordinates
+	private int enemX[], enemY[];//enemy coordinates
+	private int ammoX1[], ammoY1[], ammoX2[], ammoY2[];//player bullet coordinates
+	private int enamX[], enamY[];//enemy bullet coordinates
+	private int enamXmov[], enamYmov[];//enemy bullet movement
+	private int bosX, bosY;//boss coordinates
+	private int bosexYsm=0, bosexYend=0;//boss explosion coordinates
+	private int enmovX[], enmovY[];//enemy movement
+	private int enexX[], enexY[], enexYsm[], enexYend[];//enemy explosion coordinates
+	private int meexX, meexY, meexYend, meexYsm;//player explosion coordinates
+	private int hitenem=0, hitme=0, hitboss=0, nextboss=50, bosscnt=0, hitleft=100;//hit counters
+	private int enemovtype[], enemtype, bosstype;//enemy/boss type
+	private int bosdir=0;//boss direction
+	private int score=0, subscore=100, bosscore=2000, hitrate=0, ammofired=0;//score variables
+	private int mapX=0, mapY=0, mvmp=0, wtmpmv=0;//map variables
 	private int enemCount;
 		
-	private boolean startCond=false, selectCond=false, stopCond=false, overCond=false;//ゲームコンディション用
-	private boolean ammoCond[], enemCond[], enexCond[], ensmCond[], enamCond[];//弾・爆発用コンディション用
-	private boolean myexCond=false, mysmCond=false;//自機爆発コンディション用
-	private boolean bossCond=false, bossexCond=false, bosssmCond=false;//ボスコンディション用
+	private boolean startCond=false, selectCond=false, stopCond=false, overCond=false;//game state flags
+	private boolean ammoCond[], enemCond[], enexCond[], ensmCond[], enamCond[];//bullet/enemy state flags
+	private boolean myexCond=false, mysmCond=false;//player explosion state flags
+	private boolean bossCond=false, bossexCond=false, bosssmCond=false;//boss state flags
 	
 	private boolean MOVUP = false;
 	private boolean MOVDOWN = false;
@@ -41,7 +41,7 @@ public class comrade extends Applet implements KeyListener, Runnable
 	
 	public void init()
 	{
-		//自機関係変数初期化
+		//initialize player variables
 		myX = 50;
 		myY = 110;
 		ammoX1 = new int[5];
@@ -50,7 +50,7 @@ public class comrade extends Applet implements KeyListener, Runnable
 		ammoY2 = new int[5];
 		ammoCond = new boolean[5];
 		
-		//敵関係変数初期化
+		//initialize enemy variables
 		enem = new Image[3];
 		enemCond = new boolean[3];
 		enemX = new int[3];
@@ -60,7 +60,7 @@ public class comrade extends Applet implements KeyListener, Runnable
 		enemovtype = new int[3];
 		enemCount=0;
 		
-		//爆発関係変数初期化
+		//initialize explosion variables
 		exp = new Image[5];
 		smoke = new Image[5];
 		ensmCond = new boolean[5];
@@ -75,14 +75,14 @@ public class comrade extends Applet implements KeyListener, Runnable
 		enamYmov = new int[6];
 		enamCond = new boolean[6];
 		
-		//敵爆発画像オブジェクト取り込み
+		//load enemy explosion/smoke images
 		for(int i=0;i<5;i++)
 		{
 			exp[i]=getImage(getDocumentBase(), "explosion.gif");
 			smoke[i]=getImage(getDocumentBase(), "kemuri.gif");
 		}
 		
-		//画像読み込み
+		//load images
 		myexp = getImage(getDocumentBase(), "explosion.gif");
 		mysmoke = getImage(getDocumentBase(), "kemuri.gif");
 		su27 = getImage(getDocumentBase(), "su27.gif");
@@ -99,21 +99,21 @@ public class comrade extends Applet implements KeyListener, Runnable
 		stp = getImage(getDocumentBase(), "stp.gif");
 		wd = getImage(getDocumentBase(), "wd.gif");
 		
-		rnd = new Random();//乱数オブジェクト
+		rnd = new Random();//random object
 		
-		addKeyListener(this);//キーリスナー登録
+		addKeyListener(this);//register key listener
 		
-		thComrade = new Thread(this);//スレッドオブジェクト
-		thComrade.start();//スレッドスタート
+		thComrade = new Thread(this);//thread object
+		thComrade.start();//start thread
 		
 		offImage = createImage(120, 130);
 		offGraphics = offImage.getGraphics();
 		
-		//マップ用
+		//map variables
 		map = new Image[MapData.getMapLength()][24];
 		mvmp = MapData.getMapLength()-26;
 		
-		for(int i=0;i<MapData.getMapLength();i++)//マップメモリー情報保存
+		for(int i=0;i<MapData.getMapLength();i++)//load map images
 		{
 			for(int ii=0;ii<24;ii++)
 			{
@@ -137,9 +137,9 @@ public class comrade extends Applet implements KeyListener, Runnable
 		}
 	}
 	
-	public void keyPressed(KeyEvent e)//押しキーイベント
+	public void keyPressed(KeyEvent e)//key press event
 	{
-		if(!myexCond&&!selectCond&&!overCond) //飛行機コントロール
+		if(!myexCond&&!selectCond&&!overCond) //player control
 		{
 			if((e.getKeyCode()==KeyEvent.VK_NUMPAD6)||(e.getKeyCode()==KeyEvent.VK_RIGHT))
 			{
@@ -163,11 +163,11 @@ public class comrade extends Applet implements KeyListener, Runnable
 			
 			if(e.getKeyCode()==KeyEvent.VK_SPACE)
 			{
-				fireammo();//弾発射ルーチン呼び出し
+				fireammo();//fire bullets
 			}
 		}
 		
-		if(!selectCond&&!startCond&&!overCond) //1キー処理、セレクト画面へ
+		if(!selectCond&&!startCond&&!overCond) //select aircraft
 		{
 			if(e.getKeyCode()==KeyEvent.VK_S)
 			{
@@ -176,7 +176,7 @@ public class comrade extends Applet implements KeyListener, Runnable
 			}
 		}
 		
-		if(selectCond&&!startCond&&!overCond) //飛行機選択
+		if(selectCond&&!startCond&&!overCond) //aircraft selection
 		{
 			if((e.getKeyCode()==KeyEvent.VK_NUMPAD1)||(e.getKeyCode()==KeyEvent.VK_1))
 			{
@@ -187,7 +187,7 @@ public class comrade extends Applet implements KeyListener, Runnable
 			}
 		}
 		
-		if(stopCond&&startCond&&!overCond) //ゲーム再開
+		if(stopCond&&startCond&&!overCond) //resume game
 		{
 			if(e.getKeyCode()==KeyEvent.VK_S)
 			{
@@ -196,7 +196,7 @@ public class comrade extends Applet implements KeyListener, Runnable
 			}
 		}
 		
-		if(!selectCond&&!startCond&&overCond)//リトライ・初期化
+		if(!selectCond&&!startCond&&overCond)//game over screen
 		{
 			if(e.getKeyCode()==KeyEvent.VK_S)
 			{
@@ -231,7 +231,7 @@ public class comrade extends Applet implements KeyListener, Runnable
 			}
 		}
 		
-		if(selectCond&&!startCond&&!overCond) //2キー処理、飛行機選択
+		if(selectCond&&!startCond&&!overCond) //aircraft selection
 		{
 			if((e.getKeyCode()==KeyEvent.VK_NUMPAD2)||(e.getKeyCode()==KeyEvent.VK_2))
 			{
@@ -242,7 +242,7 @@ public class comrade extends Applet implements KeyListener, Runnable
 			}
 		}
 		
-		if(startCond&&!selectCond&&!overCond) //ゲームストップ
+		if(startCond&&!selectCond&&!overCond) //game pause
 		{
 			if(e.getKeyCode()==KeyEvent.VK_P)
 			{
@@ -252,9 +252,9 @@ public class comrade extends Applet implements KeyListener, Runnable
 		}
 	}
 	
-	public void keyReleased(KeyEvent e)//離しキーイベント
+	public void keyReleased(KeyEvent e)//key release event
 	{
-		if(!myexCond&&!selectCond&&!overCond) //飛行機コントロール
+		if(!myexCond&&!selectCond&&!overCond) //player control
 		{
 			if((e.getKeyCode()==KeyEvent.VK_NUMPAD6)||(e.getKeyCode()==KeyEvent.VK_RIGHT))
 			{
@@ -282,7 +282,7 @@ public class comrade extends Applet implements KeyListener, Runnable
 	{
 	}
 	
-	public void getkeycond()//自機移動状態チェック
+	public void getkeycond()//player movement
 	{
 		if(MOVUP)
 		{
@@ -344,15 +344,15 @@ public class comrade extends Applet implements KeyListener, Runnable
 		}
 	}
 	
-	public void movme(int degr)//自機移動
+	public void movme(int degr)//player move
 	{
 		myX+= (int)(Math.cos(Math.toRadians(degr)))*2;
 		myY+= (int)(Math.sin(Math.toRadians(degr)))*2;
 	}
 	
-	public void paint(Graphics g) //基本描写ルーチン
+	public void paint(Graphics g) //double buffer paint
 	{
-		if(selectCond&&!startCond&&!overCond) //自機セレクト画面描写
+		if(selectCond&&!startCond&&!overCond) //aircraft selection screen
 		{
 			offGraphics.setColor(Color.black);
 			offGraphics.fillRect(0,0,120,130);
@@ -363,7 +363,7 @@ public class comrade extends Applet implements KeyListener, Runnable
 			g.drawImage(offImage,0,0,this);
 		}
 			
-		if(overCond&&!startCond&&!selectCond)//ゲームオーバー画面描写
+		if(overCond&&!startCond&&!selectCond)//game over screen
 		{
 			offGraphics.setColor(Color.black);
 			offGraphics.fillRect(0,0,120,130);
@@ -377,13 +377,13 @@ public class comrade extends Applet implements KeyListener, Runnable
 			g.drawImage(offImage,0,0,this);
 		}
 			
-		if(startCond&&!selectCond&&!overCond) //ゲーム画面描写
+		if(startCond&&!selectCond&&!overCond) //game screen
 		{
 			offGraphics.setColor(Color.black);
 			offGraphics.fillRect(0,0,120,130);
 			offGraphics.setColor(Color.green);
 			
-			for(int i=0;i<26;i++)//マップ描写
+			for(int i=0;i<26;i++)//map draw
 			{
 				for(int ii=0;ii<24;ii++)
 				{
@@ -403,7 +403,7 @@ public class comrade extends Applet implements KeyListener, Runnable
 				}
 			}
 			
-			//ダメージインディケータ描写
+			//player life gauge
 			if(!myexCond)
 			{
 				offGraphics.setColor(Color.black);
@@ -412,7 +412,7 @@ public class comrade extends Applet implements KeyListener, Runnable
 				offGraphics.fillRect(10,125,hitleft,3);
 			}
 			
-			for(int i=0;i<3;i++)//敵描写
+			for(int i=0;i<3;i++)//enemy draw
 			{
 				if(enemCond[i])
 				{
@@ -420,7 +420,7 @@ public class comrade extends Applet implements KeyListener, Runnable
 				}
 			}
 			
-			for(int i=0;i<3;i++)//敵爆発描写
+			for(int i=0;i<3;i++)//enemy explosion/smoke draw
 			{
 				if(enexCond[i])
 				{
@@ -435,12 +435,12 @@ public class comrade extends Applet implements KeyListener, Runnable
 				}
 			}
 			
-			if(!myexCond) //自機描写
+			if(!myexCond) //player draw
 			{
 				offGraphics.drawImage(me, myX, myY,this);
 			}
 				
-			if(myexCond)//自機爆発描写
+			if(myexCond)//player explosion draw
 			{
 				if(mysmCond)
 				{
@@ -452,12 +452,12 @@ public class comrade extends Applet implements KeyListener, Runnable
 				}
 			}
 			
-			if(bossCond)//ボス描写
+			if(bossCond)//boss draw
 			{
 				offGraphics.drawImage(boss, bosX, bosY,this);
 			}
 			
-			if(bossexCond)//ボス爆発描写
+			if(bossexCond)//boss explosion draw
 			{
 				if(bosssmCond)
 				{
@@ -475,7 +475,7 @@ public class comrade extends Applet implements KeyListener, Runnable
 				}
 			}
 			
-			for(int i=0; i<5; i++)//自機弾描写
+			for(int i=0; i<5; i++)//player bullet draw
 			{
 				if(ammoCond[i])
 				{
@@ -491,7 +491,7 @@ public class comrade extends Applet implements KeyListener, Runnable
 				}
 			}
 			
-			for(int i=0; i<6; i++)//敵弾描写
+			for(int i=0; i<6; i++)//enemy bullet draw
 			{
 				if(enamCond[i])
 				{
@@ -503,11 +503,11 @@ public class comrade extends Applet implements KeyListener, Runnable
 			}
 				
 			offGraphics.setColor(Color.yellow);
-			if(!stopCond) //もしゲーム中断でなければ得点表示
+			if(!stopCond) //score display
 			{
 				offGraphics.drawString("SCORE:"+(""+score),0,10);
 			}
-			else //もしそうなら状態表示
+			else //pause display
 			{
 				offGraphics.drawString("GAME PAUSE",5,10);
 			}
@@ -515,7 +515,7 @@ public class comrade extends Applet implements KeyListener, Runnable
 			g.drawImage(offImage,0,0,this);
 		}
 		
-		if(!selectCond&&!startCond&&!overCond) //タイトル画面描写
+		if(!selectCond&&!startCond&&!overCond) //title screen
 		{
 			offGraphics.setColor(Color.black);
 			offGraphics.fillRect(0,0,120,130);
@@ -533,32 +533,32 @@ public class comrade extends Applet implements KeyListener, Runnable
 		paint(g);
 	}
 		
-	public void mainloop() //メインループ
+	public void mainloop() //main game loop
 	{
 		getkeycond();
-		makeenemy();//敵生産ルーチン
-		movenem();//敵移動ルーチン
-		enamfire();//敵弾発射ルーチン
-		updatemyammo();//弾移動・状態チェックルーチン
-		chkhitenem();//敵ヒットチェックルーチン
-		makeboss();//ボス出現ルーチン
-		chkenexcond();//敵爆発状態チェックルーチン
-		updatebosinfo();//ボス移動ルーチン
-		bosamfire();////ボス弾発射ルーチン
-		ammov();//敵弾移動ルーチン
-		chkenamhitme();//敵弾ヒット判定ルーチン
-		chkhitboss();//ボスヒットチェックルーチン
-		updatebosexinfo();//ボス爆発状態チェックルーチン
-		chkoverlapenem();//自機・敵重なりチェックルーチン
-		chkoverlapbos();//自機・ボス重なりチェックルーチン
-		chkmydamage();//自機ダメージ状況チェックルーチン
-		chkmyexp();//自機爆発状況チェックルーチン
-		chkmapstatus();//マップステータスチェックルーチン
+		makeenemy();//enemy creation
+		movenem();//enemy movement
+		enamfire();//enemy bullet fire
+		updatemyammo();//update player bullet position
+		chkhitenem();//check player ammo hit enemy
+		makeboss();//boss creation
+		chkenexcond();//check enemy explosion condition
+		updatebosinfo();//update boss position
+		bosamfire();////boss bullet fire
+		ammov();//enemy bullet movement
+		chkenamhitme();//check enemy bullet hit player
+		chkhitboss();//check boss hit by player
+		updatebosexinfo();//update boss explosion info
+		chkoverlapenem();//check player-enemy overlap
+		chkoverlapbos();//check player-boss overlap
+		chkmydamage();//check player damage
+		chkmyexp();//check player explosion
+		chkmapstatus();//check map status
 		
-		repaint(); //タイムアウト後再描写
+		repaint(); //refresh screen
 	}
 	
-	public void chkmapstatus()//マップステータスチェックルーチン
+	public void chkmapstatus()//map status check
 	{
 		if(startCond&&!myexCond)
 		{
@@ -575,7 +575,7 @@ public class comrade extends Applet implements KeyListener, Runnable
 		}
 	}
 	
-	public void fireammo()//弾発射ルーチン
+	public void fireammo()//fire bullets
 	{
 		for(int i=0; i<5; i++)
 		{
@@ -592,7 +592,7 @@ public class comrade extends Applet implements KeyListener, Runnable
 		}
 	}
 	
-	public void updatemyammo()//弾移動・状態チェックルーチン
+	public void updatemyammo()//update player bullet position
 	{
 		for(int i=0; i<5; i++)
 		{
@@ -612,7 +612,7 @@ public class comrade extends Applet implements KeyListener, Runnable
 		}
 	}
 	
-	public void makeenemy()//敵生産ルーチン
+	public void makeenemy()//enemy creation
 	{
 		int destX=0;
 		
@@ -627,7 +627,7 @@ public class comrade extends Applet implements KeyListener, Runnable
 				{
 					enemCond[i]=true;
 					
-					enemtype = Math.abs(rnd.nextInt()) % 5;//敵タイプ決定乱数発生
+					enemtype = Math.abs(rnd.nextInt()) % 5;//enemy type determination
 					
 					if(enemtype==0)
 					{
@@ -650,9 +650,9 @@ public class comrade extends Applet implements KeyListener, Runnable
 						enem[i]=f117;
 					}
 					
-					enemovtype[i] = Math.abs(rnd.nextInt()) % 2;//敵挙動決定乱数発生
+					enemovtype[i] = Math.abs(rnd.nextInt()) % 2;//enemy movement type determination
 					
-					//敵出現位置決定
+					//enemy initial position and movement
 					if((enemovtype[i]==0)&&((enemtype==0)||(enemtype==1)||(enemtype==2)))
 					{
 						enemY[i]=0;
@@ -721,7 +721,7 @@ public class comrade extends Applet implements KeyListener, Runnable
 		}
 	}
 	
-	public void movenem()//敵移動ルーチン
+	public void movenem()//enemy movement
 	{
 		for(int i=0;i<3;i++)
 		{
@@ -742,7 +742,7 @@ public class comrade extends Applet implements KeyListener, Runnable
 		}
 	}
 	
-	public void chkhitenem()//敵ヒットチェックルーチン
+	public void chkhitenem()//check player ammo hit enemy
 	{
 		for(int i=0;i<5;i++)
 		{
@@ -753,19 +753,19 @@ public class comrade extends Applet implements KeyListener, Runnable
 					if(enemCond[ii]&&!enexCond[ii])
 					{
 						if((ammoX1[i]>enemX[ii])&&((ammoX1[i]+2)<(enemX[ii]+20))&&(ammoY1[i]>enemY[ii])&&(ammoY1[i]<(enemY[ii]+25)))
-						{//左弾下ヒットの場合
+						{//normal hit detection
 							getenemexini(i,ii);
 						}
 						else if((ammoX1[i]>enemX[ii])&&((ammoX1[i]+2)<(enemX[ii]+20))&&((ammoY1[i]+10)>enemY[ii])&&(ammoY1[i]<enemY[ii]))
-						{//左弾上ヒットの場合
+						{//near miss hit detection
 							getenemexini(i,ii);
 						}
 						else if((ammoX2[i]>enemX[ii])&&((ammoX2[i]+2)<(enemX[ii]+20))&&(ammoY2[i]>enemY[ii])&&(ammoY2[i]<(enemY[ii]+25)))
-						{//右弾下ヒットの場合
+						{//normal hit detection
 							getenemexini(i,ii);
 						}
 						else if((ammoX2[i]>enemX[ii])&&((ammoX2[i]+2)<(enemX[ii]+20))&&((ammoY2[i]+10)>enemY[ii])&&(ammoY2[i]<enemY[ii]))
-						{//右弾上ヒットの場合
+						{//near miss hit detection
 							getenemexini(i,ii);
 						}
 					}
@@ -774,7 +774,7 @@ public class comrade extends Applet implements KeyListener, Runnable
 		}
 	}
 	
-	public void getenemexini(int am, int en)//敵爆発用変数格納ルーチン
+	public void getenemexini(int am, int en)//enemy hit processing
 	{
 		if(!bossCond)
 		{
@@ -792,7 +792,7 @@ public class comrade extends Applet implements KeyListener, Runnable
 		enemCond[en]=false;
 	}
 	
-	public void chkenexcond()//敵爆発状態チェックルーチン
+	public void chkenexcond()//check enemy explosion condition
 	{
 		for(int i=0;i<3;i++)
 		{
@@ -812,7 +812,7 @@ public class comrade extends Applet implements KeyListener, Runnable
 		}
 	}
 	
-	public void makeboss()//ボス出現ルーチン
+	public void makeboss()//boss creation
 	{
 		if((bosscnt>nextboss)&&!bossCond)
 		{
@@ -836,7 +836,7 @@ public class comrade extends Applet implements KeyListener, Runnable
 		}
 	}
 	
-	public void updatebosinfo()//ボス移動ルーチン
+	public void updatebosinfo()//update boss position
 	{
 		if(bossCond)
 		{
@@ -866,7 +866,7 @@ public class comrade extends Applet implements KeyListener, Runnable
 		}
 	}
 	
-	public void chkhitboss()//ボスヒットチェックルーチン
+	public void chkhitboss()//check boss hit by player
 	{
 		if(bossCond)
 		{
@@ -877,13 +877,13 @@ public class comrade extends Applet implements KeyListener, Runnable
 					if(bosstype==0)
 					{
 						if((ammoX1[i]>bosX)&&((ammoX1[i]+2)<(bosX+40))&&(ammoY1[i]>bosY)&&(ammoY1[i]<(bosY+35)))
-						{//右弾用
+						{//bullet hit detection
 							ammoCond[i]=false;
 							hitboss++;
 							hitenem++;
 						}
 						else if((ammoX2[i]>bosX)&&((ammoX2[i]+2)<(bosX+40))&&(ammoY2[i]>bosY)&&(ammoY2[i]<(bosY+35)))
-						{//左弾用
+						{//bullet hit detection
 							ammoCond[i]=false;
 							hitboss++;
 							hitenem++;
@@ -892,13 +892,13 @@ public class comrade extends Applet implements KeyListener, Runnable
 					else
 					{
 						if((ammoX1[i]>bosX)&&((ammoX1[i]+2)<(bosX+35))&&(ammoY1[i]>bosY)&&(ammoY1[i]<(bosY+20)))
-						{//右弾用
+						{//bullet hit detection
 							ammoCond[i]=false;
 							hitboss++;
 							hitenem++;
 						}
 						else if((ammoX2[i]>bosX)&&((ammoX2[i]+2)<(bosX+35))&&(ammoY2[i]>bosY)&&(ammoY2[i]<(bosY+20)))
-						{//左弾用
+						{//bullet hit detection
 							ammoCond[i]=false;
 							hitboss++;
 							hitenem++;
@@ -909,7 +909,7 @@ public class comrade extends Applet implements KeyListener, Runnable
 		}
 	}
 	
-	public void updatebosexinfo()//ボス爆発状態チェックルーチン
+	public void updatebosexinfo()//update boss explosion info
 	{
 		if(bossCond)
 		{
@@ -946,7 +946,7 @@ public class comrade extends Applet implements KeyListener, Runnable
 		}
 	}
 	
-	public void chkenamhitme()//敵弾ヒット判定ルーチン
+	public void chkenamhitme()//check enemy bullet hit player
 	{
 		for(int i=0;i<6;i++)
 		{
@@ -966,33 +966,33 @@ public class comrade extends Applet implements KeyListener, Runnable
 		}
 	}
 	
-	public void chkoverlapenem()//自機・敵重なりチェックルーチン
+	public void chkoverlapenem()//check player-enemy overlap
 	{
 		for(int i=0;i<3;i++)
 		{
 			if(enemCond[i]&&!myexCond)
 			{
 				if((myX>enemX[i])&&(myX<(enemX[i]+20))&&((myY+5)>enemY[i])&&(myY<(enemY[i]+25)))
-				{//右上ヒット
+				{//collision detection
 					getmyexini(i);
 				}
 				else if((enemX[i]>myX)&&(enemX[i]<(myX+19))&&((myY+5)>enemY[i])&&(myY<(enemY[i]+25)))
-				{//左上ヒット
+				{//collision detection
 					getmyexini(i);
 				}
 				else if((myX>enemX[i])&&(myX<(enemX[i]+20))&&((myY+19)>(enemY[i]+5))&&(myY<enemY[i]))
-				{//右下ヒット
+				{//collision detection
 					getmyexini(i);
 				}
 				else if((enemX[i]>myX)&&(enemX[i]<(myX+19))&&((myY+19)>(enemY[i]+5))&&(myY<enemY[i]))
-				{//左下ヒット
+				{//collision detection
 					getmyexini(i);
 				}
 			}
 		}
 	}
 	
-	public void getmyexini(int mx)//自機ダメージルーチン
+	public void getmyexini(int mx)//player explosion processing
 	{
 		hitme++;
 		hitleft-=2;
@@ -1004,52 +1004,52 @@ public class comrade extends Applet implements KeyListener, Runnable
 		enamCond[mx]=false;
 	}
 	
-	public void chkoverlapbos()//自機・ボス重なりチェックルーチン
+	public void chkoverlapbos()//check player-boss overlap
 	{
 		if(bossCond&&!myexCond)
 		{
 			if(bosstype==0)
 			{
 				if((myX>bosX)&&(myX<(bosX+40))&&(myY>bosY)&&(myY<(bosY+35)))
-				{//右上ヒット
+				{//collision detection
 					getmyexinibs();
 				}
 				else if((bosX>myX)&&(bosX<(myX+19))&&(myY>bosY)&&(myY<(bosY+35)))
-				{//左上ヒット
+				{//collision detection
 					getmyexinibs();
 				}
 				else if((myX>bosX)&&(myX<(bosX+40))&&((myY+19)>bosY)&&(myY<bosY))
-				{//右下ヒット
+				{//collision detection
 					getmyexinibs();
 				}
 				else if((bosX>myX)&&(bosX<(myX+19))&&((myY+19)>bosY)&&(myY<bosY))
-				{//左下ヒット
+				{//collision detection
 					getmyexinibs();
 				}
 			}
 			else
 			{
 				if((myX>bosX)&&(myX<(bosX+35))&&(myY>bosY)&&(myY<(bosY+20)))
-				{//右上ヒット
+				{//collision detection
 					getmyexinibs();
 				}
 				else if((bosX>myX)&&(bosX<(myX+20))&&(myY>bosY)&&(myY<(bosY+20)))
-				{//左上ヒット
+				{//collision detection
 					getmyexinibs();
 				}
 				else if((myX>bosX)&&(myX<(bosX+35))&&((myY+20)>bosY)&&(myY<bosY))
-				{//右下ヒット
+				{//collision detection
 					getmyexinibs();
 				}
 				else if((bosX>myX)&&(bosX<(myX+20))&&((myY+20)>bosY)&&(myY<bosY))
-				{//左下ヒット
+				{//collision detection
 					getmyexinibs();
 				}
 			}
 		}
 	}
 	
-	public void getmyexinibs()//自機爆発用初期化ルーチン（ボス用)
+	public void getmyexinibs()//player damage processing
 	{
 		hitme++;
 		hitleft-=2;		
@@ -1059,7 +1059,7 @@ public class comrade extends Applet implements KeyListener, Runnable
 		}
 	}
 	
-	public void chkmyexp()//自機爆発状況チェックルーチン
+	public void chkmyexp()//check player explosion
 	{
 		if(myexCond)
 		{
@@ -1075,14 +1075,14 @@ public class comrade extends Applet implements KeyListener, Runnable
 					myexCond=false;
 					mysmCond=false;
 					startCond=false;
-					overCond=true;//ゲーム終了
+					overCond=true;//game over
 					repaint();
 				}
 			}
 		}
 	}
 	
-	public void bosamfire()//ボス弾発射ルーチン
+	public void bosamfire()//boss bullet fire
 	{
 		if(bossCond&&bosY>19)
 		{
@@ -1113,7 +1113,7 @@ public class comrade extends Applet implements KeyListener, Runnable
 		}
 	}
 	
-	public void enamfire()//敵弾発射ルーチン
+	public void enamfire()//enemy bullet fire
 	{
 		for(int i=0;i<3;i++)
 		{
@@ -1134,7 +1134,7 @@ public class comrade extends Applet implements KeyListener, Runnable
 		}
 	}
 	
-	public void ammov()//敵弾移動ルーチン
+	public void ammov()//enemy bullet movement
 	{
 		for(int i=0;i<6;i++)
 		{
@@ -1150,7 +1150,7 @@ public class comrade extends Applet implements KeyListener, Runnable
 		}
 	}
 	
-	public void chkmydamage()//自機ダメージ状況チェックルーチン
+	public void chkmydamage()//check player damage
 	{
 		if(hitme>50)
 		{
