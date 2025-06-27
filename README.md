@@ -27,14 +27,25 @@ A modernized JavaFX remake of the classic Java Applet-based shooting game.
    cd comrade-fx
    ```
 2. Place all `.gif` image files in the `resources/` directory (already done)
-3. Compile:
+3. Ensure your JavaFX SDK path is correct for your OS. On Windows, it may look like `C:/javafx-sdk-XX/lib`.
+4. Compile:
    ```sh
    javac --module-path "path/to/javafx-sdk/lib" --add-modules javafx.controls,javafx.fxml ComradeFX.java MapData.java
    ```
-4. Run:
+5. Run:
    ```sh
    java --module-path "path/to/javafx-sdk/lib" --add-modules javafx.controls,javafx.fxml ComradeFX
    ```
+
+## Map Data & Terrain Types
+
+The map is defined in `MapData.java` as a 2D array. Each integer represents a terrain tile:
+
+- `0` = Sea
+- `1` = Land/Sand
+- `2` = Forest/Steppe
+- `3` = Mountain/Wooded
+- (You can expand the map or add new terrain types as needed)
 
 ## Controls
 - **Arrow keys** or **WASD**: Move player

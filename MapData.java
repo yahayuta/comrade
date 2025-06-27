@@ -3,10 +3,20 @@
 // Each integer value represents a different type of map tile.
 // The map is used for background drawing and vertical scrolling in the game.
 
+/**
+ * MapData holds the static 2D array representing the game map.
+ * Each integer value in the array represents a different type of terrain tile.
+ * Tile types: 0 = sea, 1 = land, 2 = forest, 3 = mountain (example usage)
+ * The map is used for background drawing and vertical scrolling in the game.
+ */
 public class MapData {
     // 2D array representing the map layout.
     // Tile types: 0 = sea, 1 = land, 2 = forest, 3 = mountain (example usage)
     // The map is designed to scroll vertically and repeat.
+    /**
+     * 2D array representing the map layout.
+     * Each row is a horizontal slice of the map, and each value is a tile type.
+     */
     private static final int[][] mapdat = {
         {0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0}, //0 MAP END
         {0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0}, //1
@@ -171,6 +181,12 @@ public class MapData {
      * @param colNum The column index in the map data.
      * @return The tile type integer at the given position.
      */
+    /**
+     * Returns the tile type at the specified row and column.
+     * @param rowNum The row index in the map data.
+     * @param colNum The column index in the map data.
+     * @return The tile type integer at the given position.
+     */
     public static int getTile(int rowNum, int colNum) {
         return mapdat[rowNum][colNum];
     }
@@ -179,10 +195,21 @@ public class MapData {
      * Returns the total number of rows in the map data.
      * @return The length of the map (number of rows).
      */
+    /**
+     * Returns the total number of rows in the map data.
+     * @return The length of the map (number of rows).
+     */
     public static int getMapLength() {
         return mapdat.length;
     }
 
+    /**
+     * Legacy compatibility method for old codebases.
+     * Returns the tile type at the specified row and column.
+     * @param row The row index in the map data.
+     * @param col The column index in the map data.
+     * @return The tile type integer at the given position.
+     */
     /**
      * Legacy compatibility method for old codebases.
      * Returns the tile type at the specified row and column.

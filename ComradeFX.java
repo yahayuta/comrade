@@ -11,6 +11,11 @@ import javafx.animation.AnimationTimer;
 import java.util.Random;
 
 public class ComradeFX extends Application {
+    /**
+     * Main game class for Comrade FX.
+     * Handles game initialization, main loop, rendering, and input.
+     * Uses JavaFX for graphics and input.
+     */
     // Game variables (adapted from original applet)
     private int myX = (GAME_WIDTH - 20) / 2;
     private int myY = GAME_HEIGHT - 40;
@@ -51,6 +56,10 @@ public class ComradeFX extends Application {
 
     @Override
     public void start(Stage primaryStage) {
+    /**
+     * JavaFX entry point. Sets up the game window, canvas, event handlers, and starts the game loop.
+     * @param primaryStage The main window for the JavaFX application.
+     */
         Canvas canvas = new Canvas(GAME_WIDTH, GAME_HEIGHT);
         GraphicsContext gc = canvas.getGraphicsContext2D();
         loadImages();
@@ -80,6 +89,10 @@ public class ComradeFX extends Application {
     }
 
     private void loadImages() {
+    /**
+     * Loads all required image assets for the game from the resources directory.
+     * Images include player, enemies, map tiles, and explosion effects.
+     */
         // Adjusted file paths to use the resources directory
         mig29 = new Image("file:resources/mig29.gif");
         su27 = new Image("file:resources/su27.gif");
@@ -97,6 +110,10 @@ public class ComradeFX extends Application {
         explosionImg = new Image("file:resources/explosion.gif");
     }
 
+    /**
+     * Handles key press events for player movement and firing.
+     * @param e The KeyEvent triggered by a key press.
+     */
     private void handleKeyPressed(KeyEvent e) {
         if (e.getCode() == KeyCode.RIGHT || e.getCode() == KeyCode.D) MOVRIGHT = true;
         if (e.getCode() == KeyCode.LEFT || e.getCode() == KeyCode.A) MOVLEFT = true;
@@ -105,6 +122,10 @@ public class ComradeFX extends Application {
         if (e.getCode() == KeyCode.SPACE) fireAmmo();
     }
 
+    /**
+     * Handles key release events to stop player movement.
+     * @param e The KeyEvent triggered by a key release.
+     */
     private void handleKeyReleased(KeyEvent e) {
         if (e.getCode() == KeyCode.RIGHT || e.getCode() == KeyCode.D) MOVRIGHT = false;
         if (e.getCode() == KeyCode.LEFT || e.getCode() == KeyCode.A) MOVLEFT = false;
@@ -112,6 +133,9 @@ public class ComradeFX extends Application {
         if (e.getCode() == KeyCode.DOWN || e.getCode() == KeyCode.S) MOVDOWN = false;
     }
 
+    /**
+     * Updates the game state each frame: player/enemy movement, ammo, collisions, and explosions.
+     */
     private void updateGame() {
         updateMapScroll();
         // Simple movement logic (scaled for new size)
@@ -141,6 +165,9 @@ public class ComradeFX extends Application {
         updateExplosions();
     }
 
+    /**
+     * Handles enemy firing logic. Enemies shoot bullets toward the player.
+     */
     private void enemyFire() {
         for (int i = 0; i < 3; i++) {
             if (enemCond[i] && enemY[i] > 10 && !enamCond[i]) {
@@ -153,6 +180,9 @@ public class ComradeFX extends Application {
         }
     }
 
+    /**
+     * Updates the position of enemy bullets and removes them if they leave the screen.
+     */
     private void moveEnemyBullets() {
         for (int i = 0; i < 6; i++) {
             if (enamCond[i]) {
@@ -165,6 +195,9 @@ public class ComradeFX extends Application {
         }
     }
 
+    /**
+     * Checks for collisions between player, enemies, and bullets. Handles explosions and scoring.
+     */
     private void checkCollisions() {
         // Player hit by enemy bullet
         if (!myexCond) {
@@ -201,6 +234,10 @@ public class ComradeFX extends Application {
         }
     }
 
+    /**
+     * Updates explosion animations for both player and enemies.
+     * Resets player position after explosion ends.
+     */
     private void updateExplosions() {
         // Enemy explosions
         for (int i = 0; i < 3; i++) {
@@ -222,6 +259,9 @@ public class ComradeFX extends Application {
         }
     }
 
+    /**
+     * Spawns new enemies at random positions and movement types after a cooldown.
+     */
     private void makeEnemy() {
         enemCount++;
         if ((!enemCond[0]) && (!enemCond[1]) && (!enemCond[2]) && (enemCount > 60)) {
@@ -255,6 +295,9 @@ public class ComradeFX extends Application {
         }
     }
 
+    /**
+     * Moves active enemies according to their movement type and removes them if off-screen.
+     */
     private void moveEnemy() {
         for (int i = 0; i < 3; i++) {
             if (enemCond[i]) {
@@ -267,6 +310,10 @@ public class ComradeFX extends Application {
         }
     }
 
+    /**
+     * Draws the scrolling map background using the map data and tile images.
+     * @param gc The GraphicsContext to draw on.
+     */
     private void drawMap(GraphicsContext gc) {
         int mapRows = MapData.getMapLength();
         int mapCols = 24; // MapData is always 24 columns wide
@@ -297,6 +344,9 @@ public class ComradeFX extends Application {
         }
     }
 
+    /**
+     * Scrolls the map background by a fixed speed, looping when reaching the end.
+     */
     private void updateMapScroll() {
         // Scroll the map by MAP_SCROLL_SPEED pixels per frame
         mapScrollY -= MAP_SCROLL_SPEED;
@@ -306,6 +356,10 @@ public class ComradeFX extends Application {
         }
     }
 
+    /**
+     * Draws all game elements: map, player, enemies, bullets, explosions, and score.
+     * @param gc The GraphicsContext to draw on.
+     */
     private void drawGame(GraphicsContext gc) {
         gc.setFill(javafx.scene.paint.Color.BLACK);
         gc.fillRect(0, 0, GAME_WIDTH, GAME_HEIGHT);
@@ -359,6 +413,9 @@ public class ComradeFX extends Application {
         // TODO: Draw map, more effects, etc.
     }
 
+    /**
+     * Fires player ammo if available, initializing bullet positions.
+     */
     private void fireAmmo() {
         for (int i = 0; i < 5; i++) {
             if (!ammoCond[i]) {
@@ -372,6 +429,10 @@ public class ComradeFX extends Application {
         }
     }
 
+    /**
+     * Main method. Launches the JavaFX application.
+     * @param args Command-line arguments (unused).
+     */
     public static void main(String[] args) {
         launch(args);
     }
