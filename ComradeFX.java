@@ -8,7 +8,11 @@ import javafx.scene.input.KeyEvent;
 import javafx.scene.layout.Pane;
 import javafx.stage.Stage;
 import javafx.animation.AnimationTimer;
+import javafx.scene.media.Media;
+import javafx.scene.media.MediaPlayer;
+import javafx.scene.media.AudioClip;
 import java.util.Random;
+import java.io.File;
 
 public class ComradeFX extends Application {
     /**
@@ -16,6 +20,14 @@ public class ComradeFX extends Application {
      * Handles game initialization, main loop, rendering, and input.
      * Uses JavaFX for graphics and input.
      */
+    
+    // Game states
+    public enum GameState {
+        TITLE, SELECT, PLAYING, PAUSED, GAME_OVER
+    }
+    
+    private GameState currentState = GameState.TITLE;
+    
     // Game variables (adapted from original applet)
     private int myX = (GAME_WIDTH - 20) / 2;
     private int myY = GAME_HEIGHT - 40;
@@ -40,8 +52,41 @@ public class ComradeFX extends Application {
     private int[] myexX = new int[1], myexY = new int[1], myexTimer = new int[1];
     private boolean myexCond = false;
     private Image explosionImg;
-    // Score variable
+    // Score and game statistics
     private int score = 0;
+    private int ammoFired = 0;
+    private int enemiesHit = 0;
+    private int hitRate = 0;
+    private int playerHealth = 100;
+    private int maxHealth = 100;
+    
+    // Boss system variables
+    private int bossX, bossY; // boss coordinates
+    private int bossExplosionX, bossExplosionY, bossExplosionTimer; // boss explosion coordinates
+    private int bossHitCount = 0; // boss hit counter
+    private int nextBossThreshold = 50; // enemies to defeat before boss spawns
+    private int bossCounter = 0; // counter for defeated enemies
+    private int bossType; // 0 = B-52, 1 = B-2
+    private int bossDirection = 0; // boss movement direction
+    private int bossScore = 2000; // score for defeating boss
+    private boolean bossActive = false; // boss active flag
+    private boolean bossExplosionActive = false; // boss explosion flag
+    private boolean bossSmokeActive = false; // boss smoke flag
+    private Image bossImage; // current boss image
+    
+    // Sound system variables
+    private MediaPlayer backgroundMusic;
+    private AudioClip shootSound;
+    private AudioClip explosionSound;
+    private AudioClip enemyHitSound;
+    private AudioClip bossHitSound;
+    private AudioClip bossDefeatSound;
+    private AudioClip playerHitSound;
+    private boolean soundEnabled = true;
+    private boolean musicEnabled = true;
+    
+    // Aircraft selection
+    private int selectedAircraft = 0; // 0 = MiG-29, 1 = Su-27
 
     // Game display size
     private static final int GAME_WIDTH = 360;
@@ -63,6 +108,7 @@ public class ComradeFX extends Application {
         Canvas canvas = new Canvas(GAME_WIDTH, GAME_HEIGHT);
         GraphicsContext gc = canvas.getGraphicsContext2D();
         loadImages();
+        initializeSound();
         me = mig29; // Default aircraft
 
         Pane root = new Pane(canvas);
@@ -109,17 +155,148 @@ public class ComradeFX extends Application {
         wd = new Image("file:resources/wd.gif");
         explosionImg = new Image("file:resources/explosion.gif");
     }
+    
+    /**
+     * Initializes the sound system with background music and sound effects.
+     * Uses placeholder sounds since we don't have actual audio files.
+     */
+    private void initializeSound() {
+        try {
+            // Load actual sound files from resources directory
+            shootSound = new AudioClip("file:resources/shoot.wav");
+            explosionSound = new AudioClip("file:resources/explosion.wav");
+            enemyHitSound = new AudioClip("file:resources/enemy_hit.wav");
+            bossHitSound = new AudioClip("file:resources/boss_hit.wav");
+            bossDefeatSound = new AudioClip("file:resources/boss_defeat.wav");
+            playerHitSound = new AudioClip("file:resources/player_hit.wav");
+            
+            // Set volume for sound effects
+            if (shootSound != null) shootSound.setVolume(0.3);
+            if (explosionSound != null) explosionSound.setVolume(0.4);
+            if (enemyHitSound != null) enemyHitSound.setVolume(0.3);
+            if (bossHitSound != null) bossHitSound.setVolume(0.4);
+            if (bossDefeatSound != null) bossDefeatSound.setVolume(0.5);
+            if (playerHitSound != null) playerHitSound.setVolume(0.4);
+            
+            // Initialize background music (commented out for now)
+            // Media backgroundMedia = new Media(new File("resources/background_music.mp3").toURI().toString());
+            // backgroundMusic = new MediaPlayer(backgroundMedia);
+            // backgroundMusic.setCycleCount(MediaPlayer.INDEFINITE);
+            // backgroundMusic.setVolume(0.3);
+            
+            System.out.println("Sound system initialized successfully!");
+            
+        } catch (Exception e) {
+            System.out.println("Sound initialization failed: " + e.getMessage());
+            System.out.println("Make sure you have generated the sound files using the Python script!");
+            // Continue without sound if files are missing
+        }
+    }
+    
+    /**
+     * Plays a sound effect if sound is enabled.
+     */
+    private void playSound(AudioClip sound) {
+        if (soundEnabled && sound != null) {
+            try {
+                sound.play();
+            } catch (Exception e) {
+                System.out.println("Sound playback error: " + e.getMessage());
+            }
+        }
+    }
+    
+    /**
+     * Starts background music if music is enabled.
+     */
+    private void startBackgroundMusic() {
+        if (musicEnabled && backgroundMusic != null) {
+            try {
+                backgroundMusic.play();
+            } catch (Exception e) {
+                // Ignore music errors
+            }
+        }
+    }
+    
+    /**
+     * Stops background music.
+     */
+    private void stopBackgroundMusic() {
+        if (backgroundMusic != null) {
+            try {
+                backgroundMusic.stop();
+            } catch (Exception e) {
+                // Ignore music errors
+            }
+        }
+    }
 
     /**
      * Handles key press events for player movement and firing.
      * @param e The KeyEvent triggered by a key press.
      */
     private void handleKeyPressed(KeyEvent e) {
-        if (e.getCode() == KeyCode.RIGHT || e.getCode() == KeyCode.D) MOVRIGHT = true;
-        if (e.getCode() == KeyCode.LEFT || e.getCode() == KeyCode.A) MOVLEFT = true;
-        if (e.getCode() == KeyCode.UP || e.getCode() == KeyCode.W) MOVUP = true;
-        if (e.getCode() == KeyCode.DOWN || e.getCode() == KeyCode.S) MOVDOWN = true;
-        if (e.getCode() == KeyCode.SPACE) fireAmmo();
+        switch (currentState) {
+            case TITLE:
+                if (e.getCode() == KeyCode.S) {
+                    currentState = GameState.SELECT;
+                }
+                break;
+                
+            case SELECT:
+                if (e.getCode() == KeyCode.DIGIT1 || e.getCode() == KeyCode.NUMPAD1) {
+                    selectedAircraft = 0;
+                    me = mig29;
+                    currentState = GameState.PLAYING;
+                    resetGame();
+                    startBackgroundMusic();
+                } else if (e.getCode() == KeyCode.DIGIT2 || e.getCode() == KeyCode.NUMPAD2) {
+                    selectedAircraft = 1;
+                    me = su27;
+                    currentState = GameState.PLAYING;
+                    resetGame();
+                    startBackgroundMusic();
+                }
+                break;
+                
+            case PLAYING:
+                if (e.getCode() == KeyCode.P) {
+                    currentState = GameState.PAUSED;
+                    stopBackgroundMusic();
+                } else if (e.getCode() == KeyCode.M) {
+                    // Toggle music
+                    musicEnabled = !musicEnabled;
+                    if (musicEnabled) {
+                        startBackgroundMusic();
+                    } else {
+                        stopBackgroundMusic();
+                    }
+                } else if (e.getCode() == KeyCode.N) {
+                    // Toggle sound effects
+                    soundEnabled = !soundEnabled;
+                } else if (!myexCond) {
+                    if (e.getCode() == KeyCode.RIGHT || e.getCode() == KeyCode.D) MOVRIGHT = true;
+                    if (e.getCode() == KeyCode.LEFT || e.getCode() == KeyCode.A) MOVLEFT = true;
+                    if (e.getCode() == KeyCode.UP || e.getCode() == KeyCode.W) MOVUP = true;
+                    if (e.getCode() == KeyCode.DOWN || e.getCode() == KeyCode.S) MOVDOWN = true;
+                    if (e.getCode() == KeyCode.SPACE) fireAmmo();
+                }
+                break;
+                
+            case PAUSED:
+                if (e.getCode() == KeyCode.S) {
+                    currentState = GameState.PLAYING;
+                    startBackgroundMusic();
+                }
+                break;
+                
+            case GAME_OVER:
+                if (e.getCode() == KeyCode.S) {
+                    currentState = GameState.SELECT;
+                }
+                break;
+        }
     }
 
     /**
@@ -137,32 +314,105 @@ public class ComradeFX extends Application {
      * Updates the game state each frame: player/enemy movement, ammo, collisions, and explosions.
      */
     private void updateGame() {
-        updateMapScroll();
-        // Simple movement logic (scaled for new size)
-        int moveStep = 4;
-        if (MOVUP) myY -= moveStep;
-        if (MOVDOWN) myY += moveStep;
-        if (MOVRIGHT) myX += moveStep;
-        if (MOVLEFT) myX -= moveStep;
-        if (myX < 0) myX = 0;
-        if (myX > GAME_WIDTH - 20) myX = GAME_WIDTH - 20;
-        if (myY < 0) myY = 0;
-        if (myY > GAME_HEIGHT - 20) myY = GAME_HEIGHT - 20;
-        // Update ammo positions
-        for (int i = 0; i < 5; i++) {
-            if (ammoCond[i]) {
-                ammoY1[i] -= 2; // slower bullet speed
-                ammoY2[i] -= 2;
-                if (ammoY1[i] < 0 || ammoY2[i] < 0) ammoCond[i] = false;
-            }
+        switch (currentState) {
+            case TITLE:
+            case SELECT:
+            case PAUSED:
+            case GAME_OVER:
+                // No game logic updates in these states
+                break;
+                
+            case PLAYING:
+                updateMapScroll();
+                // Simple movement logic (scaled for new size)
+                int moveStep = 4;
+                if (MOVUP) myY -= moveStep;
+                if (MOVDOWN) myY += moveStep;
+                if (MOVRIGHT) myX += moveStep;
+                if (MOVLEFT) myX -= moveStep;
+                if (myX < 0) myX = 0;
+                if (myX > GAME_WIDTH - 20) myX = GAME_WIDTH - 20;
+                if (myY < 0) myY = 0;
+                if (myY > GAME_HEIGHT - 20) myY = GAME_HEIGHT - 20;
+                // Update ammo positions
+                for (int i = 0; i < 5; i++) {
+                    if (ammoCond[i]) {
+                        ammoY1[i] -= 2; // slower bullet speed
+                        ammoY2[i] -= 2;
+                        if (ammoY1[i] < 0 || ammoY2[i] < 0) ammoCond[i] = false;
+                    }
+                }
+                // Enemy logic
+                makeEnemy();
+                moveEnemy();
+                enemyFire();
+                moveEnemyBullets();
+                
+                // Boss logic
+                makeBoss();
+                updateBoss();
+                bossFire();
+                checkBossCollisions();
+                updateBossExplosion();
+                
+                checkCollisions();
+                checkPlayerBossCollision();
+                updateExplosions();
+                break;
         }
-        // Enemy logic
-        makeEnemy();
-        moveEnemy();
-        enemyFire();
-        moveEnemyBullets();
-        checkCollisions();
-        updateExplosions();
+    }
+    
+    /**
+     * Resets the game state for a new game.
+     */
+    private void resetGame() {
+        // Reset player position
+        myX = (GAME_WIDTH - 20) / 2;
+        myY = GAME_HEIGHT - 40;
+        
+        // Reset game statistics
+        score = 0;
+        ammoFired = 0;
+        enemiesHit = 0;
+        hitRate = 0;
+        playerHealth = maxHealth;
+        
+        // Reset movement flags
+        MOVUP = false;
+        MOVDOWN = false;
+        MOVRIGHT = false;
+        MOVLEFT = false;
+        
+        // Reset player explosion
+        myexCond = false;
+        
+        // Reset enemies
+        for (int i = 0; i < 3; i++) {
+            enemCond[i] = false;
+            enexCond[i] = false;
+        }
+        
+        // Reset bullets
+        for (int i = 0; i < 5; i++) {
+            ammoCond[i] = false;
+        }
+        for (int i = 0; i < 6; i++) {
+            enamCond[i] = false;
+        }
+        
+        // Reset map scroll
+        mapScrollY = MapData.getMapLength() * TILE_SIZE - GAME_HEIGHT;
+        enemCount = 0;
+        
+        // Reset boss variables
+        bossActive = false;
+        bossExplosionActive = false;
+        bossSmokeActive = false;
+        bossCounter = 0;
+        bossHitCount = 0;
+        nextBossThreshold = 50;
+        bossScore = 2000;
+        bossDirection = 0;
     }
 
     /**
@@ -205,10 +455,16 @@ public class ComradeFX extends Application {
                 if (enamCond[i]) {
                     if (enamX[i] > myX && enamX[i] < myX + 19 && enamY[i] > myY && enamY[i] < myY + 19) {
                         enamCond[i] = false;
-                        myexX[0] = myX;
-                        myexY[0] = myY;
-                        myexTimer[0] = 0;
-                        myexCond = true;
+                        playerHealth -= 10; // Reduce health when hit
+                        playSound(playerHitSound);
+                        if (playerHealth <= 0) {
+                            // Game over
+                            myexX[0] = myX;
+                            myexY[0] = myY;
+                            myexTimer[0] = 0;
+                            myexCond = true;
+                            currentState = GameState.GAME_OVER;
+                        }
                     }
                 }
             }
@@ -227,6 +483,13 @@ public class ComradeFX extends Application {
                             enemCond[j] = false;
                             ammoCond[i] = false;
                             score += 100; // Add score for defeating enemy
+                            enemiesHit++;
+                            bossCounter++; // Increment boss counter
+                            playSound(enemyHitSound);
+                            // Update hit rate
+                            if (ammoFired > 0) {
+                                hitRate = (enemiesHit * 100) / ammoFired;
+                            }
                         }
                     }
                 }
@@ -253,8 +516,11 @@ public class ComradeFX extends Application {
             myexTimer[0]++;
             if (myexTimer[0] > 20) {
                 myexCond = false;
-                myX = (GAME_WIDTH - 20) / 2;
-                myY = GAME_HEIGHT - 40;
+                // Only reset position if not game over
+                if (currentState == GameState.PLAYING) {
+                    myX = (GAME_WIDTH - 20) / 2;
+                    myY = GAME_HEIGHT - 40;
+                }
             }
         }
     }
@@ -305,6 +571,194 @@ public class ComradeFX extends Application {
                 enemY[i] += enmovY[i]; // Use full speed, not divided
                 if ((enemY[i] > GAME_HEIGHT - 15) || (enemX[i] > GAME_WIDTH - 20) || (enemX[i] < 0) || (enemY[i] < 0)) {
                     enemCond[i] = false;
+                }
+            }
+        }
+    }
+    
+    /**
+     * Creates a boss when enough enemies have been defeated.
+     */
+    private void makeBoss() {
+        if (bossCounter >= nextBossThreshold && !bossActive) {
+            bossType = Math.abs(rnd.nextInt()) % 2;
+            
+            if (bossType == 0) {
+                // B-52
+                bossX = GAME_WIDTH / 2 - 20;
+                bossY = -35;
+                bossImage = b52;
+            } else {
+                // B-2
+                bossX = GAME_WIDTH / 2 - 17;
+                bossY = -20;
+                bossImage = b2;
+            }
+            
+            bossActive = true;
+            bossHitCount = 0;
+            nextBossThreshold += 50; // Increase threshold for next boss
+        }
+    }
+    
+    /**
+     * Updates boss position and movement.
+     */
+    private void updateBoss() {
+        if (bossActive) {
+            if (bossY < 20) {
+                bossY++; // Move down to screen
+            } else {
+                // Side-to-side movement
+                if (bossDirection == 0) {
+                    bossX++;
+                    if (bossX > GAME_WIDTH - 40) {
+                        bossDirection = 1;
+                    }
+                } else {
+                    bossX--;
+                    if (bossX < 0) {
+                        bossDirection = 0;
+                    }
+                }
+            }
+        }
+    }
+    
+    /**
+     * Boss fires bullets at the player.
+     */
+    private void bossFire() {
+        if (bossActive && bossY > 19) {
+            for (int i = 3; i < 6; i++) {
+                if (!enamCond[i]) {
+                    if (bossType == 0) {
+                        // B-52 bullet
+                        enamX[i] = bossX + 19;
+                        enamY[i] = bossY + 35;
+                    } else {
+                        // B-2 bullet
+                        enamX[i] = bossX + 16;
+                        enamY[i] = bossY + 20;
+                    }
+                    enamXmov[i] = (int)((Math.abs(rnd.nextInt()) % GAME_WIDTH) / 40);
+                    enamYmov[i] = 3;
+                    enamCond[i] = true;
+                    break;
+                }
+            }
+        }
+    }
+    
+    /**
+     * Checks for collisions between player bullets and boss.
+     */
+    private void checkBossCollisions() {
+        if (bossActive) {
+            for (int i = 0; i < 5; i++) {
+                if (ammoCond[i]) {
+                    boolean hit = false;
+                    
+                    if (bossType == 0) {
+                        // B-52 collision box
+                        if ((ammoX1[i] > bossX && ammoX1[i] < bossX + 40 && ammoY1[i] > bossY && ammoY1[i] < bossY + 35) ||
+                            (ammoX2[i] > bossX && ammoX2[i] < bossX + 40 && ammoY2[i] > bossY && ammoY2[i] < bossY + 35)) {
+                            hit = true;
+                        }
+                    } else {
+                        // B-2 collision box
+                        if ((ammoX1[i] > bossX && ammoX1[i] < bossX + 35 && ammoY1[i] > bossY && ammoY1[i] < bossY + 20) ||
+                            (ammoX2[i] > bossX && ammoX2[i] < bossX + 35 && ammoY2[i] > bossY && ammoY2[i] < bossY + 20)) {
+                            hit = true;
+                        }
+                    }
+                    
+                    if (hit) {
+                        ammoCond[i] = false;
+                        bossHitCount++;
+                        enemiesHit++;
+                        playSound(bossHitSound);
+                        // Update hit rate
+                        if (ammoFired > 0) {
+                            hitRate = (enemiesHit * 100) / ammoFired;
+                        }
+                    }
+                }
+            }
+        }
+    }
+    
+    /**
+     * Updates boss explosion animation and handles boss defeat.
+     */
+    private void updateBossExplosion() {
+        if (bossActive && bossHitCount >= 50) {
+            // Boss defeated
+            bossActive = false;
+            bossExplosionActive = true;
+            bossExplosionX = bossX;
+            bossExplosionY = bossY;
+            bossExplosionTimer = 0;
+            
+            // Clear boss bullets
+            for (int i = 3; i < 6; i++) {
+                enamCond[i] = false;
+            }
+            
+            // Award score
+            score += bossScore;
+            bossScore += 1000; // Increase score for next boss
+            
+            playSound(bossDefeatSound);
+            bossHitCount = 0;
+        }
+        
+        if (bossExplosionActive) {
+            bossExplosionTimer++;
+            if (bossExplosionTimer > 10) {
+                bossSmokeActive = true;
+            }
+            if (bossExplosionTimer > 20) {
+                bossExplosionActive = false;
+                bossSmokeActive = false;
+            }
+        }
+    }
+    
+    /**
+     * Checks for collision between player and boss.
+     */
+    private void checkPlayerBossCollision() {
+        if (bossActive && !myexCond) {
+            boolean collision = false;
+            
+            if (bossType == 0) {
+                // B-52 collision
+                if ((myX > bossX && myX < bossX + 40 && myY > bossY && myY < bossY + 35) ||
+                    (bossX > myX && bossX < myX + 19 && myY > bossY && myY < bossY + 35) ||
+                    (myX > bossX && myX < bossX + 40 && myY + 19 > bossY && myY < bossY) ||
+                    (bossX > myX && bossX < myX + 19 && myY + 19 > bossY && myY < bossY)) {
+                    collision = true;
+                }
+            } else {
+                // B-2 collision
+                if ((myX > bossX && myX < bossX + 35 && myY > bossY && myY < bossY + 20) ||
+                    (bossX > myX && bossX < myX + 19 && myY > bossY && myY < bossY + 20) ||
+                    (myX > bossX && myX < bossX + 35 && myY + 19 > bossY && myY < bossY) ||
+                    (bossX > myX && bossX < myX + 19 && myY + 19 > bossY && myY < bossY)) {
+                    collision = true;
+                }
+            }
+            
+            if (collision) {
+                playerHealth -= 20; // Boss collision does more damage
+                playSound(playerHitSound);
+                if (playerHealth <= 0) {
+                    myexX[0] = myX;
+                    myexY[0] = myY;
+                    myexTimer[0] = 0;
+                    myexCond = true;
+                    currentState = GameState.GAME_OVER;
                 }
             }
         }
@@ -363,17 +817,81 @@ public class ComradeFX extends Application {
     private void drawGame(GraphicsContext gc) {
         gc.setFill(javafx.scene.paint.Color.BLACK);
         gc.fillRect(0, 0, GAME_WIDTH, GAME_HEIGHT);
+        
+        switch (currentState) {
+            case TITLE:
+                drawTitleScreen(gc);
+                break;
+                
+            case SELECT:
+                drawSelectScreen(gc);
+                break;
+                
+            case PLAYING:
+                drawPlayingScreen(gc);
+                break;
+                
+            case PAUSED:
+                drawPlayingScreen(gc);
+                drawPauseOverlay(gc);
+                break;
+                
+            case GAME_OVER:
+                drawGameOverScreen(gc);
+                break;
+        }
+    }
+    
+    /**
+     * Draws the title screen.
+     */
+    private void drawTitleScreen(GraphicsContext gc) {
+        gc.setFill(javafx.scene.paint.Color.GREEN);
+        gc.setFont(javafx.scene.text.Font.font("Arial", 24));
+        gc.fillText("COMRADE", GAME_WIDTH / 2 - 60, GAME_HEIGHT / 2 - 50);
+        gc.setFont(javafx.scene.text.Font.font("Arial", 16));
+        gc.fillText("Press S to Start", GAME_WIDTH / 2 - 60, GAME_HEIGHT / 2);
+        gc.setFont(javafx.scene.text.Font.font("Arial", 12));
+        gc.fillText("(c) 2003 Y&Y FACTORY", GAME_WIDTH / 2 - 70, GAME_HEIGHT - 30);
+    }
+    
+    /**
+     * Draws the aircraft selection screen.
+     */
+    private void drawSelectScreen(GraphicsContext gc) {
+        gc.setFill(javafx.scene.paint.Color.GREEN);
+        gc.setFont(javafx.scene.text.Font.font("Arial", 18));
+        gc.fillText("SELECT AIRCRAFT", GAME_WIDTH / 2 - 80, 80);
+        gc.setFont(javafx.scene.text.Font.font("Arial", 14));
+        gc.fillText("1: MIG-29 FULCRUM", GAME_WIDTH / 2 - 80, 120);
+        gc.fillText("2: SU-27 FLANKER", GAME_WIDTH / 2 - 80, 140);
+        
+        // Draw aircraft previews
+        if (mig29 != null) {
+            gc.drawImage(mig29, GAME_WIDTH / 2 - 100, 160, 40, 40);
+        }
+        if (su27 != null) {
+            gc.drawImage(su27, GAME_WIDTH / 2 + 60, 160, 40, 40);
+        }
+    }
+    
+    /**
+     * Draws the main playing screen.
+     */
+    private void drawPlayingScreen(GraphicsContext gc) {
         // Draw the scrolling map background
         drawMap(gc);
-        // Draw score
-        gc.setFill(javafx.scene.paint.Color.WHITE);
-        gc.fillText("Score: " + score, 10, 20);
+        
+        // Draw UI
+        drawUI(gc);
+        
         // Draw player
         if (!myexCond) {
             gc.drawImage(me, myX, myY);
         } else {
             gc.drawImage(explosionImg, myexX[0], myexY[0]);
         }
+        
         // Draw ammo
         gc.setFill(javafx.scene.paint.Color.YELLOW);
         for (int i = 0; i < 5; i++) {
@@ -382,6 +900,7 @@ public class ComradeFX extends Application {
                 gc.fillRect(ammoX2[i], ammoY2[i], 4, 20);
             }
         }
+        
         // Draw enemy bullets
         gc.setFill(javafx.scene.paint.Color.PINK);
         for (int i = 0; i < 6; i++) {
@@ -389,6 +908,7 @@ public class ComradeFX extends Application {
                 gc.fillRect(enamX[i], enamY[i], 4, 10);
             }
         }
+        
         // Draw enemies with images or explosions
         for (int i = 0; i < 3; i++) {
             if (enexCond[i]) {
@@ -410,7 +930,101 @@ public class ComradeFX extends Application {
                 }
             }
         }
-        // TODO: Draw map, more effects, etc.
+        
+        // Draw boss
+        if (bossActive) {
+            gc.drawImage(bossImage, bossX, bossY);
+        } else if (bossExplosionActive) {
+            gc.drawImage(explosionImg, bossExplosionX, bossExplosionY);
+        }
+    }
+    
+    /**
+     * Draws the UI elements (score, health, etc.).
+     */
+    private void drawUI(GraphicsContext gc) {
+        gc.setFill(javafx.scene.paint.Color.WHITE);
+        gc.setFont(javafx.scene.text.Font.font("Arial", 12));
+        gc.fillText("Score: " + score, 10, 20);
+        gc.fillText("Health: " + playerHealth + "/" + maxHealth, 10, 35);
+        gc.fillText("Hit Rate: " + hitRate + "%", 10, 50);
+        
+        // Boss information
+        if (bossActive) {
+            gc.setFill(javafx.scene.paint.Color.RED);
+            gc.fillText("BOSS: " + (bossType == 0 ? "B-52" : "B-2"), 10, 65);
+            gc.fillText("Boss HP: " + (50 - bossHitCount) + "/50", 10, 80);
+        } else {
+            gc.setFill(javafx.scene.paint.Color.YELLOW);
+            gc.fillText("Next Boss: " + (nextBossThreshold - bossCounter) + " enemies", 10, 65);
+        }
+        
+        // Sound controls
+        gc.setFont(javafx.scene.text.Font.font("Arial", 10));
+        gc.setFill(musicEnabled ? javafx.scene.paint.Color.GREEN : javafx.scene.paint.Color.RED);
+        gc.fillText("Music: " + (musicEnabled ? "ON" : "OFF"), GAME_WIDTH - 80, GAME_HEIGHT - 40);
+        gc.setFill(soundEnabled ? javafx.scene.paint.Color.GREEN : javafx.scene.paint.Color.RED);
+        gc.fillText("Sound: " + (soundEnabled ? "ON" : "OFF"), GAME_WIDTH - 80, GAME_HEIGHT - 25);
+        gc.setFill(javafx.scene.paint.Color.WHITE);
+        gc.fillText("M: Toggle Music", GAME_WIDTH - 80, GAME_HEIGHT - 10);
+        gc.fillText("N: Toggle Sound", GAME_WIDTH - 80, GAME_HEIGHT + 5);
+        
+        // Draw health bar
+        int barWidth = 200;
+        int barHeight = 10;
+        int barX = GAME_WIDTH - barWidth - 10;
+        int barY = 10;
+        
+        // Background
+        gc.setFill(javafx.scene.paint.Color.DARKRED);
+        gc.fillRect(barX, barY, barWidth, barHeight);
+        
+        // Health
+        gc.setFill(javafx.scene.paint.Color.RED);
+        gc.fillRect(barX, barY, (int)((double)playerHealth / maxHealth * barWidth), barHeight);
+    }
+    
+    /**
+     * Draws the pause overlay.
+     */
+    private void drawPauseOverlay(GraphicsContext gc) {
+        // Semi-transparent overlay
+        gc.setFill(javafx.scene.paint.Color.rgb(0, 0, 0, 0.7));
+        gc.fillRect(0, 0, GAME_WIDTH, GAME_HEIGHT);
+        
+        // Pause text
+        gc.setFill(javafx.scene.paint.Color.WHITE);
+        gc.setFont(javafx.scene.text.Font.font("Arial", 24));
+        gc.fillText("PAUSED", GAME_WIDTH / 2 - 50, GAME_HEIGHT / 2);
+        gc.setFont(javafx.scene.text.Font.font("Arial", 16));
+        gc.fillText("Press S to Resume", GAME_WIDTH / 2 - 70, GAME_HEIGHT / 2 + 30);
+        gc.setFont(javafx.scene.text.Font.font("Arial", 14));
+        gc.fillText("M: Toggle Music", GAME_WIDTH / 2 - 70, GAME_HEIGHT / 2 + 50);
+        gc.fillText("N: Toggle Sound", GAME_WIDTH / 2 - 70, GAME_HEIGHT / 2 + 65);
+    }
+    
+    /**
+     * Draws the game over screen.
+     */
+    private void drawGameOverScreen(GraphicsContext gc) {
+        // Semi-transparent overlay
+        gc.setFill(javafx.scene.paint.Color.rgb(0, 0, 0, 0.8));
+        gc.fillRect(0, 0, GAME_WIDTH, GAME_HEIGHT);
+        
+        // Game over text and stats
+        gc.setFill(javafx.scene.paint.Color.RED);
+        gc.setFont(javafx.scene.text.Font.font("Arial", 24));
+        gc.fillText("GAME OVER", GAME_WIDTH / 2 - 70, GAME_HEIGHT / 2 - 60);
+        
+        gc.setFill(javafx.scene.paint.Color.WHITE);
+        gc.setFont(javafx.scene.text.Font.font("Arial", 14));
+        gc.fillText("Final Score: " + score, GAME_WIDTH / 2 - 60, GAME_HEIGHT / 2 - 30);
+        gc.fillText("Ammo Fired: " + ammoFired, GAME_WIDTH / 2 - 60, GAME_HEIGHT / 2 - 15);
+        gc.fillText("Enemies Hit: " + enemiesHit, GAME_WIDTH / 2 - 60, GAME_HEIGHT / 2);
+        gc.fillText("Hit Rate: " + hitRate + "%", GAME_WIDTH / 2 - 60, GAME_HEIGHT / 2 + 15);
+        
+        gc.setFont(javafx.scene.text.Font.font("Arial", 16));
+        gc.fillText("Press S to Play Again", GAME_WIDTH / 2 - 80, GAME_HEIGHT / 2 + 50);
     }
 
     /**
@@ -424,6 +1038,8 @@ public class ComradeFX extends Application {
                 ammoX2[i] = myX + 16;
                 ammoY1[i] = myY;
                 ammoY2[i] = myY;
+                ammoFired++;
+                playSound(shootSound);
                 break;
             }
         }
