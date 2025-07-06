@@ -79,9 +79,15 @@ public class ComradeFX extends Application {
     private AudioClip shootSound;
     private AudioClip explosionSound;
     private AudioClip enemyHitSound;
+    private AudioClip enemyHitMediumSound;
+    private AudioClip enemyHitLargeSound;
     private AudioClip bossHitSound;
     private AudioClip bossDefeatSound;
     private AudioClip playerHitSound;
+    private AudioClip powerupSound;
+    private AudioClip bonusSound;
+    private AudioClip gameOverSound;
+    private AudioClip levelCompleteSound;
     private boolean soundEnabled = true;
     private boolean musicEnabled = true;
     
@@ -166,17 +172,29 @@ public class ComradeFX extends Application {
             shootSound = new AudioClip("file:resources/shoot.wav");
             explosionSound = new AudioClip("file:resources/explosion.wav");
             enemyHitSound = new AudioClip("file:resources/enemy_hit.wav");
+            enemyHitMediumSound = new AudioClip("file:resources/enemy_hit_medium.wav");
+            enemyHitLargeSound = new AudioClip("file:resources/enemy_hit_large.wav");
             bossHitSound = new AudioClip("file:resources/boss_hit.wav");
             bossDefeatSound = new AudioClip("file:resources/boss_defeat.wav");
             playerHitSound = new AudioClip("file:resources/player_hit.wav");
+            powerupSound = new AudioClip("file:resources/powerup.wav");
+            bonusSound = new AudioClip("file:resources/bonus.wav");
+            gameOverSound = new AudioClip("file:resources/game_over.wav");
+            levelCompleteSound = new AudioClip("file:resources/level_complete.wav");
             
             // Set volume for sound effects
             if (shootSound != null) shootSound.setVolume(0.3);
             if (explosionSound != null) explosionSound.setVolume(0.4);
             if (enemyHitSound != null) enemyHitSound.setVolume(0.3);
+            if (enemyHitMediumSound != null) enemyHitMediumSound.setVolume(0.3);
+            if (enemyHitLargeSound != null) enemyHitLargeSound.setVolume(0.3);
             if (bossHitSound != null) bossHitSound.setVolume(0.4);
             if (bossDefeatSound != null) bossDefeatSound.setVolume(0.5);
             if (playerHitSound != null) playerHitSound.setVolume(0.4);
+            if (powerupSound != null) powerupSound.setVolume(0.4);
+            if (bonusSound != null) bonusSound.setVolume(0.4);
+            if (gameOverSound != null) gameOverSound.setVolume(0.5);
+            if (levelCompleteSound != null) levelCompleteSound.setVolume(0.4);
             
             // Initialize background music (commented out for now)
             // Media backgroundMedia = new Media(new File("resources/background_music.mp3").toURI().toString());
@@ -251,12 +269,14 @@ public class ComradeFX extends Application {
                     currentState = GameState.PLAYING;
                     resetGame();
                     startBackgroundMusic();
+                    playSound(powerupSound);
                 } else if (e.getCode() == KeyCode.DIGIT2 || e.getCode() == KeyCode.NUMPAD2) {
                     selectedAircraft = 1;
                     me = su27;
                     currentState = GameState.PLAYING;
                     resetGame();
                     startBackgroundMusic();
+                    playSound(powerupSound);
                 }
                 break;
                 
@@ -463,6 +483,7 @@ public class ComradeFX extends Application {
                             myexY[0] = myY;
                             myexTimer[0] = 0;
                             myexCond = true;
+                            playSound(gameOverSound);
                             currentState = GameState.GAME_OVER;
                         }
                     }
@@ -485,7 +506,24 @@ public class ComradeFX extends Application {
                             score += 100; // Add score for defeating enemy
                             enemiesHit++;
                             bossCounter++; // Increment boss counter
-                            playSound(enemyHitSound);
+                            
+                            // Play bonus sound for score milestones
+                            if (score % 1000 == 0 && score > 0) {
+                                playSound(bonusSound);
+                            }
+                            
+                            // Play different sounds based on enemy type
+                            if (enemImgType[j] == 0 || enemImgType[j] == 1) {
+                                // Small enemies (F-15, F-16)
+                                playSound(enemyHitSound);
+                            } else if (enemImgType[j] == 2 || enemImgType[j] == 3) {
+                                // Medium enemies (F-18, F-117)
+                                playSound(enemyHitMediumSound);
+                            } else {
+                                // Large enemies (EUF)
+                                playSound(enemyHitLargeSound);
+                            }
+                            
                             // Update hit rate
                             if (ammoFired > 0) {
                                 hitRate = (enemiesHit * 100) / ammoFired;
@@ -710,6 +748,7 @@ public class ComradeFX extends Application {
             bossScore += 1000; // Increase score for next boss
             
             playSound(bossDefeatSound);
+            playSound(levelCompleteSound);
             bossHitCount = 0;
         }
         

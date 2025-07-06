@@ -134,6 +134,15 @@ You can generate two sets of sound effects:
 
 > **Tip:** Run only one of the scripts to generate your preferred sound set. The game will use whatever `.wav` files are present in the `resources/` directory.
 
+### Sound Integration
+The game intelligently uses different sounds based on game events:
+
+- **Enemy Destruction**: Different sounds for small (F-15/F-16), medium (F-18/F-117), and large (EUF) enemies
+- **Boss Battles**: Special hit and defeat sounds with level completion fanfare
+- **Score Milestones**: Bonus sound plays every 1000 points
+- **Aircraft Selection**: Power-up sound when choosing your fighter
+- **Game Over**: Dramatic sound when player health reaches zero
+
 ### Customization
 You can replace the generated sound files with your own `.wav` files in the `resources/` directory. The game will automatically load them on startup.
 
