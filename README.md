@@ -56,7 +56,10 @@ A modernized JavaFX remake of the classic Java Applet-based shooting game "Comra
 2. **Generate sound files** (optional but recommended):
    ```bash
    pip install numpy scipy
+   # For classic-style sounds:
    python generate_sounds.py
+   # For authentic Xevious-style sounds:
+   python generate_xevious_sounds.py
    ```
 
 3. **Set up JavaFX**:
@@ -105,12 +108,31 @@ The map scrolls upward infinitely and tiles scale to fit the display size.
 ## 🎵 Sound System
 
 ### Generated Sound Effects
-- **shoot.wav**: High-pitched beep for firing
-- **explosion.wav**: Noise burst for explosions
-- **enemy_hit.wav**: Medium beep for enemy hits
-- **boss_hit.wav**: Lower beep for boss hits
-- **boss_defeat.wav**: Descending tone for boss defeat
-- **player_hit.wav**: Harsh noise for player damage
+You can generate two sets of sound effects:
+
+- **Classic Style** (`generate_sounds.py`):
+  - `shoot.wav`: High-pitched beep for firing
+  - `explosion.wav`: Noise burst for explosions
+  - `enemy_hit.wav`: Medium beep for enemy hits
+  - `boss_hit.wav`: Lower beep for boss hits
+  - `boss_defeat.wav`: Descending tone for boss defeat
+  - `player_hit.wav`: Harsh noise for player damage
+
+- **Xevious Style** (`generate_xevious_sounds.py`):
+  - `shoot.wav`: Xevious-style main weapon sound
+  - `enemy_hit.wav`: Small enemy destruction
+  - `enemy_hit_medium.wav`: Medium enemy destruction
+  - `enemy_hit_large.wav`: Large enemy destruction
+  - `boss_hit.wav`: Xevious-style boss hit (descending tone)
+  - `boss_defeat.wav`: Xevious-style boss defeat (dramatic descending tone)
+  - `player_hit.wav`: Xevious-style player hit (harsh filtered noise)
+  - `explosion.wav`: Xevious-style explosion (filtered noise)
+  - `powerup.wav`: Power-up (ascending tone)
+  - `bonus.wav`: Bonus points (chord)
+  - `game_over.wav`: Game over (descending chord)
+  - `level_complete.wav`: Level complete (ascending chord)
+
+> **Tip:** Run only one of the scripts to generate your preferred sound set. The game will use whatever `.wav` files are present in the `resources/` directory.
 
 ### Customization
 You can replace the generated sound files with your own `.wav` files in the `resources/` directory. The game will automatically load them on startup.
@@ -124,6 +146,7 @@ comrade-fx/
 ├── comrade.java            # Original Java Applet version (legacy)
 ├── comrade.html            # HTML wrapper for applet version
 ├── generate_sounds.py      # Python script to generate sound files
+├── generate_xevious_sounds.py # Python script to generate Xevious-style sound files
 ├── resources/              # Game assets
 │   ├── *.gif              # Aircraft and terrain images
 │   └── *.wav              # Sound effects
@@ -146,6 +169,7 @@ comrade-fx/
 2. **Generate assets**:
    ```bash
    python generate_sounds.py
+   python generate_xevious_sounds.py
    ```
 
 3. **Compile**:
