@@ -18,6 +18,9 @@ A modernized JavaFX remake of the classic Java Applet-based shooting game "Comra
 - **Progressive Difficulty**: Game gets harder as you score more points, with faster and more aggressive enemies
 - **Scrolling Terrain**: Multiple terrain types (sea, land, forest, mountains)
 - **Collision Detection**: Precise hit detection for bullets and aircraft
+- **Power-Up System**: Collectible power-ups with various effects
+- **High Score System**: Persistent score tracking with player names
+- **Settings System**: Configurable game options and preferences
 
 ### Boss Battles
 - **B-52 Bomber**: Large, slow-moving boss with high HP
@@ -39,6 +42,8 @@ A modernized JavaFX remake of the classic Java Applet-based shooting game "Comra
 - **Game Over Screen**: Final statistics and restart option
 - **Health System**: Player health bar and damage tracking
 - **Score Tracking**: Real-time score, hit rate, and statistics
+- **Settings Screen**: Configurable game options
+- **High Scores Screen**: Persistent score tracking
 
 ## 🚀 Getting Started
 
@@ -93,6 +98,9 @@ A modernized JavaFX remake of the classic Java Applet-based shooting game "Comra
 - **S**: Start game / Resume from pause / Restart after game over
 - **1**: Select MiG-29 Fulcrum
 - **2**: Select Su-27 Flanker
+- **H**: View high scores
+- **O**: Open settings
+- **ESC**: Return to title from settings/high scores
 
 ## 🗺️ Map System
 
@@ -153,6 +161,14 @@ You can replace the generated sound files with your own `.wav` files in the `res
 ```
 comrade-fx/
 ├── ComradeFX.java          # Main JavaFX game application
+├── GameEngine.java         # Core game logic and entity management
+├── Player.java             # Player aircraft and power-up system
+├── Enemy.java              # Enemy aircraft with movement patterns
+├── Boss.java               # Boss battles and mechanics
+├── Bullet.java             # Bullet physics and rendering
+├── PowerUp.java            # Power-up system and effects
+├── HighScoreManager.java   # High score persistence
+├── GameSettings.java       # Settings management
 ├── MapData.java            # Map data and terrain definitions
 ├── comrade.java            # Original Java Applet version (legacy)
 ├── comrade.html            # HTML wrapper for applet version
@@ -196,12 +212,41 @@ comrade-fx/
 
 The codebase is structured for easy extension:
 
-- **New Enemies**: Add to `makeEnemy()` method
-- **New Bosses**: Extend `makeBoss()` method
+- **New Enemies**: Add to `Enemy.java` movement patterns
+- **New Bosses**: Extend `Boss.java` boss types
+- **New Power-Ups**: Add to `PowerUp.java` power-up types
 - **New Sounds**: Add to `initializeSound()` method
 - **New Terrain**: Update `MapData.java` and `drawMap()` method
+- **New Settings**: Extend `GameSettings.java` configuration options
 
 ## 🎮 Game Mechanics
+
+### Power-Up System
+- **Rapid Fire (RF)**: Increases fire rate for 10 seconds
+- **Triple Shot (TS)**: Fires 3 bullets in a spread pattern for 10 seconds
+- **Shield (SH)**: Provides temporary invincibility for 10 seconds
+- **Health (HP)**: Restores 25 HP immediately
+- **Score Bonus (SB)**: Adds 500 points immediately
+- **Spawn Rate**: Power-ups spawn randomly with 1/200 chance per frame
+- **Visual Effects**: Animated power-ups with color-coded indicators
+- **UI Display**: Active power-ups shown on screen with colored text
+
+### High Score System
+- **Persistent Storage**: Scores saved to `highscores.dat` file
+- **Top 10 Scores**: Maintains list of highest scores
+- **Player Names**: Customizable player names for score entries
+- **Date Tracking**: Automatic date stamps for each score
+- **Automatic Detection**: Game checks for new high scores on game over
+- **High Score Screen**: Dedicated screen showing all top scores
+
+### Settings System
+- **Persistent Settings**: Configuration saved to `gamesettings.properties`
+- **Player Name**: Customizable player name
+- **Sound Controls**: Toggle sound effects and music independently
+- **Volume Controls**: Adjustable sound and music volume (0-100%)
+- **Difficulty Settings**: Configurable starting difficulty level
+- **Display Options**: Toggle FPS counter and hitbox display
+- **Settings Screen**: Dedicated screen for all configuration options
 
 ### Enemy Movement Patterns
 - **Straight Down**: Enemies move directly downward from the top
@@ -214,13 +259,17 @@ The codebase is structured for easy extension:
 ### Scoring System
 - **Regular Enemy**: 100 points
 - **Boss Defeat**: 2000+ points (increases each time)
+- **Power-Up Score Bonus**: 500 points
 - **Hit Rate**: Percentage of successful shots
+- **High Score Tracking**: Persistent score storage with player names
 
 ### Health System
 - **Player Health**: 100 HP
 - **Enemy Bullet Damage**: 10 HP
 - **Boss Collision Damage**: 20 HP
 - **Health Bar**: Visual indicator in top-right corner
+- **Health Power-Up**: Restores 25 HP when collected
+- **Shield Protection**: Temporary invincibility prevents all damage
 
 ### Boss System
 - **Spawn Trigger**: Every 50 enemies defeated
@@ -246,6 +295,35 @@ This project is licensed under the [MIT License](LICENSE) - see the LICENSE file
 - **JavaFX**: Modern Java graphics framework
 - **Sound Generation**: Python with NumPy/SciPy
 - **Game Assets**: Preserved from original applet version
+
+## 💾 Data Persistence
+
+The game automatically saves and loads data files:
+
+### High Scores (`highscores.dat`)
+- **Format**: Serialized Java objects
+- **Content**: Top 10 scores with player names and dates
+- **Location**: Game directory
+- **Backup**: File is automatically created if missing
+
+### Settings (`gamesettings.properties`)
+- **Format**: Java Properties file
+- **Content**: All game configuration options
+- **Location**: Game directory
+- **Default Values**: Automatically set if file is missing
+
+### File Structure
+```
+comrade-fx/
+├── *.java                  # Source code files
+├── *.class                 # Compiled Java classes
+├── resources/              # Game assets
+├── highscores.dat          # High score data (auto-generated)
+├── gamesettings.properties # Settings data (auto-generated)
+├── compile.bat             # Windows compilation script
+├── run.bat                 # Windows execution script
+└── README.md              # This file
+```
 
 ## 📊 Game Statistics
 

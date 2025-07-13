@@ -13,6 +13,7 @@ public class GameEngine {
     private Boss boss;
     private Bullet[] playerBullets;
     private Bullet[] enemyBullets;
+    private PowerUp[] powerUps;
     
     // Game state
     private int score;
@@ -30,6 +31,8 @@ public class GameEngine {
     private static final int MAX_ENEMY_BULLETS = 8; // Increased from 6 to 8
     private static final int ENEMY_SPAWN_DELAY = 45; // Reduced from 60 to 45 for more frequent spawning
     private static final int INITIAL_BOSS_THRESHOLD = 50;
+    private static final int MAX_POWER_UPS = 3;
+    private static final int POWER_UP_SPAWN_CHANCE = 200; // 1 in 200 chance per frame
     
     // Enemy firing control
     private int enemyFireCooldown = 0;
@@ -39,6 +42,15 @@ public class GameEngine {
     // Difficulty progression
     private int difficultyLevel = 1;
     private static final int DIFFICULTY_INCREASE_SCORE = 1000; // Increase difficulty every 1000 points
+    
+    // Power-up spawning
+    private int powerUpSpawnCounter = 0;
+    
+    // High score system
+    private HighScoreManager highScoreManager;
+    
+    // Game settings
+    private GameSettings gameSettings;
     
     // Random number generator
     private Random random;
@@ -61,6 +73,14 @@ public class GameEngine {
         for (int i = 0; i < MAX_ENEMY_BULLETS; i++) {
             this.enemyBullets[i] = new Bullet();
         }
+        this.powerUps = new PowerUp[MAX_POWER_UPS];
+        for (int i = 0; i < MAX_POWER_UPS; i++) {
+            this.powerUps[i] = new PowerUp();
+        }
+        
+        // Initialize managers
+        this.highScoreManager = new HighScoreManager();
+        this.gameSettings = new GameSettings();
         
         resetGame();
     }
@@ -90,8 +110,16 @@ public class GameEngine {
             bullet.update(gameWidth, gameHeight);
         }
         
+        // Update power-ups
+        for (PowerUp powerUp : powerUps) {
+            powerUp.update(gameWidth, gameHeight);
+        }
+        
         // Spawn enemies
         spawnEnemies(gameWidth, gameHeight);
+        
+        // Spawn power-ups
+        spawnPowerUps(gameWidth, gameHeight);
         
         // Spawn boss
         spawnBoss();
@@ -266,6 +294,38 @@ public class GameEngine {
     }
     
     /**
+     * Spawns power-ups randomly.
+     */
+    private void spawnPowerUps(int gameWidth, int gameHeight) {
+        powerUpSpawnCounter++;
+        
+        // Check if we should spawn a power-up
+        if (powerUpSpawnCounter > POWER_UP_SPAWN_CHANCE) {
+            powerUpSpawnCounter = 0;
+            
+            // Count active power-ups
+            int activePowerUps = 0;
+            for (PowerUp powerUp : powerUps) {
+                if (powerUp.isActive()) {
+                    activePowerUps++;
+                }
+            }
+            
+            // Spawn power-up if we have room
+            if (activePowerUps < MAX_POWER_UPS) {
+                for (PowerUp powerUp : powerUps) {
+                    if (!powerUp.isActive()) {
+                        int spawnX = random.nextInt(gameWidth - 16);
+                        int spawnY = 0;
+                        powerUp.spawn(spawnX, spawnY, random);
+                        break;
+                    }
+                }
+            }
+        }
+    }
+    
+    /**
      * Checks all collision types.
      */
     private void checkCollisions() {
@@ -273,6 +333,7 @@ public class GameEngine {
         checkPlayerBulletEnemyCollisions();
         checkPlayerBulletBossCollisions();
         checkPlayerBossCollisions();
+        checkPlayerPowerUpCollisions();
     }
     
     /**
@@ -347,14 +408,55 @@ public class GameEngine {
     }
     
     /**
+     * Checks collisions between player and power-ups.
+     */
+    private void checkPlayerPowerUpCollisions() {
+        if (player.isExploding()) {
+            return;
+        }
+        
+        for (PowerUp powerUp : powerUps) {
+            if (powerUp.isActive() && powerUp.checkCollision(player)) {
+                // Apply power-up effect
+                player.applyPowerUp(powerUp.getType());
+                
+                // Add score bonus if it's a score bonus power-up
+                if (powerUp.getType() == PowerUp.PowerUpType.SCORE_BONUS) {
+                    score += 500;
+                }
+                
+                // Deactivate power-up
+                powerUp.collect();
+            }
+        }
+    }
+    
+    /**
      * Fires a player bullet if available.
      */
     public boolean firePlayerBullet() {
-        for (Bullet bullet : playerBullets) {
-            if (!bullet.isActive()) {
-                bullet.firePlayerBullet(player.getX() + 2, player.getY());
-                ammoFired++;
+        if (player.isTripleShotActive()) {
+            // Fire three bullets in a spread pattern
+            int bulletsFired = 0;
+            for (Bullet bullet : playerBullets) {
+                if (!bullet.isActive() && bulletsFired < 3) {
+                    int offsetX = bulletsFired == 0 ? 2 : (bulletsFired == 1 ? -2 : 6);
+                    bullet.firePlayerBullet(player.getX() + offsetX, player.getY());
+                    bulletsFired++;
+                }
+            }
+            if (bulletsFired > 0) {
+                ammoFired += bulletsFired;
                 return true;
+            }
+        } else {
+            // Fire single bullet
+            for (Bullet bullet : playerBullets) {
+                if (!bullet.isActive()) {
+                    bullet.firePlayerBullet(player.getX() + 2, player.getY());
+                    ammoFired++;
+                    return true;
+                }
             }
         }
         return false;
@@ -390,6 +492,12 @@ public class GameEngine {
         for (Bullet bullet : enemyBullets) {
             bullet.reset();
         }
+        
+        for (PowerUp powerUp : powerUps) {
+            powerUp.reset();
+        }
+        
+        powerUpSpawnCounter = 0;
     }
     
     // Getters for game state
@@ -406,6 +514,9 @@ public class GameEngine {
     public int getNextBossThreshold() { return nextBossThreshold; }
     public int getBossScore() { return bossScore; }
     public int getDifficultyLevel() { return difficultyLevel; }
+    public PowerUp[] getPowerUps() { return powerUps; }
+    public HighScoreManager getHighScoreManager() { return highScoreManager; }
+    public GameSettings getGameSettings() { return gameSettings; }
     
     /**
      * Sets the boss score when boss is defeated.

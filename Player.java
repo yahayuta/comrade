@@ -17,6 +17,15 @@ public class Player {
     // Movement flags
     private boolean movingUp, movingDown, movingLeft, movingRight;
     
+    // Power-up effects
+    private boolean rapidFireActive;
+    private boolean tripleShotActive;
+    private boolean shieldActive;
+    private int rapidFireTimer;
+    private int tripleShotTimer;
+    private int shieldTimer;
+    private static final int POWER_UP_DURATION = 600; // 10 seconds at 60 FPS
+    
     // Constants
     private static final int PLAYER_WIDTH = 20;
     private static final int PLAYER_HEIGHT = 20;
@@ -46,6 +55,9 @@ public class Player {
             return;
         }
         
+        // Update power-up timers
+        updatePowerUpTimers();
+        
         // Handle movement
         if (movingUp) y -= MOVE_SPEED;
         if (movingDown) y += MOVE_SPEED;
@@ -74,7 +86,7 @@ public class Player {
      * Handles player taking damage.
      */
     public void takeDamage(int damage) {
-        if (!isExploding) {
+        if (!isExploding && !shieldActive) {
             health -= damage;
             if (health <= 0) {
                 health = 0;
@@ -106,6 +118,14 @@ public class Player {
         this.movingDown = false;
         this.movingLeft = false;
         this.movingRight = false;
+        
+        // Reset power-ups
+        rapidFireActive = false;
+        tripleShotActive = false;
+        shieldActive = false;
+        rapidFireTimer = 0;
+        tripleShotTimer = 0;
+        shieldTimer = 0;
     }
     
     /**
@@ -133,6 +153,61 @@ public class Player {
     public Image getImage() { return image; }
     
     /**
+     * Updates power-up timers and deactivates expired power-ups.
+     */
+    private void updatePowerUpTimers() {
+        if (rapidFireActive) {
+            rapidFireTimer++;
+            if (rapidFireTimer >= POWER_UP_DURATION) {
+                rapidFireActive = false;
+                rapidFireTimer = 0;
+            }
+        }
+        
+        if (tripleShotActive) {
+            tripleShotTimer++;
+            if (tripleShotTimer >= POWER_UP_DURATION) {
+                tripleShotActive = false;
+                tripleShotTimer = 0;
+            }
+        }
+        
+        if (shieldActive) {
+            shieldTimer++;
+            if (shieldTimer >= POWER_UP_DURATION) {
+                shieldActive = false;
+                shieldTimer = 0;
+            }
+        }
+    }
+    
+    /**
+     * Applies a power-up effect to the player.
+     */
+    public void applyPowerUp(PowerUp.PowerUpType type) {
+        switch (type) {
+            case RAPID_FIRE:
+                rapidFireActive = true;
+                rapidFireTimer = 0;
+                break;
+            case TRIPLE_SHOT:
+                tripleShotActive = true;
+                tripleShotTimer = 0;
+                break;
+            case SHIELD:
+                shieldActive = true;
+                shieldTimer = 0;
+                break;
+            case HEALTH:
+                health = Math.min(health + 25, maxHealth);
+                break;
+            case SCORE_BONUS:
+                // This will be handled by the game engine
+                break;
+        }
+    }
+    
+    /**
      * Gets the collision bounds for hit detection.
      */
     public boolean intersects(int otherX, int otherY, int otherWidth, int otherHeight) {
@@ -141,4 +216,9 @@ public class Player {
                y < otherY + otherHeight &&
                y + PLAYER_HEIGHT > otherY;
     }
+    
+    // Power-up getters
+    public boolean isRapidFireActive() { return rapidFireActive; }
+    public boolean isTripleShotActive() { return tripleShotActive; }
+    public boolean isShieldActive() { return shieldActive; }
 } 

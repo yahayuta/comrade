@@ -23,7 +23,7 @@ public class ComradeFX extends Application {
     
     // Game states
     public enum GameState {
-        TITLE, SELECT, PLAYING, PAUSED, GAME_OVER
+        TITLE, SELECT, PLAYING, PAUSED, GAME_OVER, SETTINGS, HIGH_SCORES
     }
     
     private GameState currentState = GameState.TITLE;
@@ -56,6 +56,18 @@ public class ComradeFX extends Application {
     // Aircraft selection
     private int selectedAircraft = 0; // 0 = MiG-29, 1 = Su-27
 
+    // Settings and high scores
+    private GameSettings gameSettings;
+    private HighScoreManager highScoreManager;
+    private String currentPlayerName;
+    private boolean showHighScoreEntry = false;
+    private StringBuilder nameInput = new StringBuilder();
+    
+    // FPS counter
+    private long lastFrameTime = 0;
+    private int frameCount = 0;
+    private double currentFPS = 0.0;
+
     // Game display size
     private static final int GAME_WIDTH = 360;
     private static final int GAME_HEIGHT = 390;
@@ -77,6 +89,11 @@ public class ComradeFX extends Application {
         GraphicsContext gc = canvas.getGraphicsContext2D();
         loadImages();
         initializeSound();
+        
+        // Initialize managers
+        gameSettings = new GameSettings();
+        highScoreManager = new HighScoreManager();
+        currentPlayerName = gameSettings.getPlayerName();
         
         // Initialize game engine
         gameEngine = new GameEngine(GAME_WIDTH, GAME_HEIGHT);
@@ -224,6 +241,10 @@ public class ComradeFX extends Application {
             case TITLE:
                 if (e.getCode() == KeyCode.S) {
                     currentState = GameState.SELECT;
+                } else if (e.getCode() == KeyCode.O) {
+                    currentState = GameState.SETTINGS;
+                } else if (e.getCode() == KeyCode.H) {
+                    currentState = GameState.HIGH_SCORES;
                 }
                 break;
                 
@@ -285,6 +306,17 @@ public class ComradeFX extends Application {
             case GAME_OVER:
                 if (e.getCode() == KeyCode.S) {
                     currentState = GameState.SELECT;
+                } else if (e.getCode() == KeyCode.H) {
+                    currentState = GameState.HIGH_SCORES;
+                } else if (e.getCode() == KeyCode.O) {
+                    currentState = GameState.SETTINGS;
+                }
+                break;
+                
+            case SETTINGS:
+            case HIGH_SCORES:
+                if (e.getCode() == KeyCode.ESCAPE) {
+                    currentState = GameState.TITLE;
                 }
                 break;
         }
@@ -314,6 +346,8 @@ public class ComradeFX extends Application {
             case SELECT:
             case PAUSED:
             case GAME_OVER:
+            case SETTINGS:
+            case HIGH_SCORES:
                 // No game logic updates in these states
                 break;
                 
@@ -325,6 +359,12 @@ public class ComradeFX extends Application {
                 
                 // Check for game over
                 if (!gameEngine.getPlayer().isAlive()) {
+                    // Check for high score
+                    if (highScoreManager.isHighScore(gameEngine.getScore())) {
+                        showHighScoreEntry = true;
+                        nameInput.setLength(0);
+                        nameInput.append(currentPlayerName);
+                    }
                     currentState = GameState.GAME_OVER;
                     playSound(gameOverSound);
                 }
@@ -432,6 +472,14 @@ public class ComradeFX extends Application {
             case GAME_OVER:
                 drawGameOverScreen(gc);
                 break;
+                
+            case SETTINGS:
+                drawSettingsScreen(gc);
+                break;
+                
+            case HIGH_SCORES:
+                drawHighScoresScreen(gc);
+                break;
         }
     }
     
@@ -444,6 +492,9 @@ public class ComradeFX extends Application {
         gc.fillText("COMRADE", GAME_WIDTH / 2 - 60, GAME_HEIGHT / 2 - 50);
         gc.setFont(javafx.scene.text.Font.font("Arial", 16));
         gc.fillText("Press S to Start", GAME_WIDTH / 2 - 60, GAME_HEIGHT / 2);
+        gc.setFont(javafx.scene.text.Font.font("Arial", 14));
+        gc.fillText("Press H for High Scores", GAME_WIDTH / 2 - 80, GAME_HEIGHT / 2 + 25);
+        gc.fillText("Press O for Options", GAME_WIDTH / 2 - 80, GAME_HEIGHT / 2 + 45);
         gc.setFont(javafx.scene.text.Font.font("Arial", 12));
         gc.fillText("(c) 2003 Y&Y FACTORY", GAME_WIDTH / 2 - 70, GAME_HEIGHT - 30);
     }
@@ -507,6 +558,13 @@ public class ComradeFX extends Application {
             boss.setImage(bossImg);
         }
         boss.render(gc, explosionImg);
+        
+        // Draw power-ups
+        for (PowerUp powerUp : gameEngine.getPowerUps()) {
+            if (powerUp.isActive()) {
+                drawPowerUp(gc, powerUp);
+            }
+        }
     }
     
     /**
@@ -567,6 +625,24 @@ public class ComradeFX extends Application {
         // Health
         gc.setFill(javafx.scene.paint.Color.RED);
         gc.fillRect(barX, barY, (int)((double)gameEngine.getPlayer().getHealth() / gameEngine.getPlayer().getMaxHealth() * barWidth), barHeight);
+        
+        // Power-up status
+        int powerUpY = 120;
+        if (gameEngine.getPlayer().isRapidFireActive()) {
+            gc.setFill(javafx.scene.paint.Color.RED);
+            gc.fillText("RAPID FIRE", 10, powerUpY);
+            powerUpY += 15;
+        }
+        if (gameEngine.getPlayer().isTripleShotActive()) {
+            gc.setFill(javafx.scene.paint.Color.BLUE);
+            gc.fillText("TRIPLE SHOT", 10, powerUpY);
+            powerUpY += 15;
+        }
+        if (gameEngine.getPlayer().isShieldActive()) {
+            gc.setFill(javafx.scene.paint.Color.CYAN);
+            gc.fillText("SHIELD", 10, powerUpY);
+            powerUpY += 15;
+        }
     }
     
     /**
@@ -608,8 +684,126 @@ public class ComradeFX extends Application {
         gc.fillText("Enemies Hit: " + gameEngine.getEnemiesHit(), GAME_WIDTH / 2 - 60, GAME_HEIGHT / 2);
         gc.fillText("Hit Rate: " + gameEngine.getHitRate() + "%", GAME_WIDTH / 2 - 60, GAME_HEIGHT / 2 + 15);
         
+        // High score notification
+        if (showHighScoreEntry) {
+            gc.setFill(javafx.scene.paint.Color.YELLOW);
+            gc.fillText("NEW HIGH SCORE!", GAME_WIDTH / 2 - 80, GAME_HEIGHT / 2 + 30);
+            gc.setFill(javafx.scene.paint.Color.WHITE);
+            gc.fillText("Enter your name: " + nameInput.toString(), GAME_WIDTH / 2 - 80, GAME_HEIGHT / 2 + 50);
+        }
+        
         gc.setFont(javafx.scene.text.Font.font("Arial", 16));
-        gc.fillText("Press S to Play Again", GAME_WIDTH / 2 - 80, GAME_HEIGHT / 2 + 50);
+        gc.fillText("Press S to Play Again", GAME_WIDTH / 2 - 80, GAME_HEIGHT / 2 + 70);
+        gc.fillText("Press H for High Scores", GAME_WIDTH / 2 - 80, GAME_HEIGHT / 2 + 90);
+        gc.fillText("Press O for Options", GAME_WIDTH / 2 - 80, GAME_HEIGHT / 2 + 110);
+    }
+    
+    /**
+     * Draws the settings screen.
+     */
+    private void drawSettingsScreen(GraphicsContext gc) {
+        gc.setFill(javafx.scene.paint.Color.BLACK);
+        gc.fillRect(0, 0, GAME_WIDTH, GAME_HEIGHT);
+        
+        gc.setFill(javafx.scene.paint.Color.WHITE);
+        gc.setFont(javafx.scene.text.Font.font("Arial", 20));
+        gc.fillText("SETTINGS", GAME_WIDTH / 2 - 60, 50);
+        
+        gc.setFont(javafx.scene.text.Font.font("Arial", 14));
+        gc.fillText("Player Name: " + gameSettings.getPlayerName(), 20, 100);
+        gc.fillText("Sound: " + (gameSettings.isSoundEnabled() ? "ON" : "OFF"), 20, 130);
+        gc.fillText("Music: " + (gameSettings.isMusicEnabled() ? "ON" : "OFF"), 20, 160);
+        gc.fillText("Sound Volume: " + (int)(gameSettings.getSoundVolume() * 100) + "%", 20, 190);
+        gc.fillText("Music Volume: " + (int)(gameSettings.getMusicVolume() * 100) + "%", 20, 220);
+        gc.fillText("Difficulty: " + gameSettings.getDifficulty(), 20, 250);
+        gc.fillText("Show FPS: " + (gameSettings.isShowFPS() ? "ON" : "OFF"), 20, 280);
+        gc.fillText("Show Hitboxes: " + (gameSettings.isShowHitboxes() ? "ON" : "OFF"), 20, 310);
+        
+        gc.setFont(javafx.scene.text.Font.font("Arial", 12));
+        gc.fillText("Press ESC to return to title", 20, GAME_HEIGHT - 20);
+    }
+    
+    /**
+     * Draws the high scores screen.
+     */
+    private void drawHighScoresScreen(GraphicsContext gc) {
+        gc.setFill(javafx.scene.paint.Color.BLACK);
+        gc.fillRect(0, 0, GAME_WIDTH, GAME_HEIGHT);
+        
+        gc.setFill(javafx.scene.paint.Color.WHITE);
+        gc.setFont(javafx.scene.text.Font.font("Arial", 20));
+        gc.fillText("HIGH SCORES", GAME_WIDTH / 2 - 70, 50);
+        
+        gc.setFont(javafx.scene.text.Font.font("Arial", 12));
+        int y = 100;
+        int rank = 1;
+        
+        for (HighScoreManager.HighScoreEntry entry : highScoreManager.getHighScores()) {
+            gc.setFill(javafx.scene.paint.Color.WHITE);
+            gc.fillText(rank + ". " + entry.getPlayerName(), 20, y);
+            gc.fillText(String.valueOf(entry.getScore()), 200, y);
+            gc.setFill(javafx.scene.paint.Color.GRAY);
+            gc.fillText(entry.getDate(), 250, y);
+            y += 25;
+            rank++;
+        }
+        
+        gc.setFont(javafx.scene.text.Font.font("Arial", 12));
+        gc.setFill(javafx.scene.paint.Color.WHITE);
+        gc.fillText("Press ESC to return to title", 20, GAME_HEIGHT - 20);
+    }
+    
+    /**
+     * Draws a power-up with animation.
+     */
+    private void drawPowerUp(GraphicsContext gc, PowerUp powerUp) {
+        // Draw power-up as a colored rectangle with animation
+        javafx.scene.paint.Color powerUpColor;
+        String powerUpText;
+        
+        switch (powerUp.getType()) {
+            case RAPID_FIRE:
+                powerUpColor = javafx.scene.paint.Color.RED;
+                powerUpText = "RF";
+                break;
+            case TRIPLE_SHOT:
+                powerUpColor = javafx.scene.paint.Color.BLUE;
+                powerUpText = "TS";
+                break;
+            case SHIELD:
+                powerUpColor = javafx.scene.paint.Color.CYAN;
+                powerUpText = "SH";
+                break;
+            case HEALTH:
+                powerUpColor = javafx.scene.paint.Color.GREEN;
+                powerUpText = "HP";
+                break;
+            case SCORE_BONUS:
+                powerUpColor = javafx.scene.paint.Color.YELLOW;
+                powerUpText = "SB";
+                break;
+            default:
+                powerUpColor = javafx.scene.paint.Color.WHITE;
+                powerUpText = "??";
+                break;
+        }
+        
+        // Animate the power-up
+        double alpha = 0.5 + 0.5 * Math.sin(powerUp.getAnimationFrame() * 0.5);
+        gc.setFill(javafx.scene.paint.Color.rgb(
+            (int)(powerUpColor.getRed() * 255),
+            (int)(powerUpColor.getGreen() * 255),
+            (int)(powerUpColor.getBlue() * 255),
+            alpha
+        ));
+        
+        // Draw power-up rectangle
+        gc.fillRect(powerUp.getX(), powerUp.getY(), 16, 16);
+        
+        // Draw power-up text
+        gc.setFill(javafx.scene.paint.Color.WHITE);
+        gc.setFont(javafx.scene.text.Font.font("Arial", 10));
+        gc.fillText(powerUpText, powerUp.getX() + 2, powerUp.getY() + 12);
     }
 
 
