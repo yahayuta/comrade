@@ -14,6 +14,8 @@ A modernized JavaFX remake of the classic Java Applet-based shooting game "Comra
 - **Vertical Scrolling Shooter**: Classic arcade-style gameplay
 - **Multiple Aircraft**: Choose between MiG-29 Fulcrum and Su-27 Flanker
 - **Dynamic Enemies**: Various enemy types with different movement patterns
+- **Variety of Enemy Movement Patterns**: Enemies can move straight, zigzag, circle, dive, or hover, making each encounter unique and challenging
+- **Progressive Difficulty**: Game gets harder as you score more points, with faster and more aggressive enemies
 - **Scrolling Terrain**: Multiple terrain types (sea, land, forest, mountains)
 - **Collision Detection**: Precise hit detection for bullets and aircraft
 
@@ -200,6 +202,14 @@ The codebase is structured for easy extension:
 - **New Terrain**: Update `MapData.java` and `drawMap()` method
 
 ## 🎮 Game Mechanics
+
+### Enemy Movement Patterns
+- **Straight Down**: Enemies move directly downward from the top
+- **Straight Right/Left**: Enemies enter from the left or right and move horizontally
+- **Zigzag**: Enemies move in a zigzag pattern, changing direction periodically
+- **Circle**: Enemies move in a circular path while descending
+- **Dive**: Enemies dive toward the center of the screen after reaching a certain height
+- **Hover**: Enemies hover horizontally, occasionally changing direction and jittering vertically
 
 ### Scoring System
 - **Regular Enemy**: 100 points
